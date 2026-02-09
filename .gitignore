@@ -1,0 +1,39 @@
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Environment Variables
+.env
+.env.local
+.env.*.local
+
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Build/Dist
+dist/
+build/
+
+# IDEs
+.vscode/
+.idea/
+
+# Project Specific Data (Databases/Logs)
+backend/chroma_db/
+backend/vector_store.json
+backend/case_record.json
+
+# OS
+.DS_Store
+Thumbs.db
