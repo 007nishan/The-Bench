@@ -35,8 +35,19 @@
     <!-- Main Container -->
     <div class="flex-1 flex overflow-hidden">
 
-        <!-- Left Sidebar: Evidence Vault -->
+        <!-- Left Sidebar: Cases & Vault -->
         <aside class="w-64 border-r border-slate-800 p-4 flex flex-col gap-4 bg-slate-900/30">
+            <!-- Case Selection -->
+            <div class="border-b border-slate-800/50 pb-4">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="font-semibold text-sm text-slate-300">Active Case</h3>
+                    <i data-lucide="briefcase" class="w-4 h-4 text-slate-500"></i>
+                </div>
+                <select id="caseSelect" onchange="switchCase()" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs text-slate-200 outline-none focus:border-blue-500 transition-colors">
+                    <option value="">Select Case...</option>
+                </select>
+            </div>
+
             <div class="flex items-center justify-between">
                 <h3 class="font-semibold text-sm text-slate-300">Evidence Vault</h3>
                 <i data-lucide="folder" class="w-4 h-4 text-slate-500"></i>
@@ -58,51 +69,43 @@
         <!-- Center Workspace -->
         <main class="flex-1 flex flex-col p-6 overflow-hidden border-r border-slate-800">
             
-            {% if role != 'judge' %}
-            <!-- PARTY VIEW: WAR ROOM -->
+            {% if role == 'admin' %}
+            <!-- ADMIN VIEW: HEADQUARTERS -->
             <div class="flex-1 flex flex-col space-y-4 overflow-hidden">
-                <h2 class="text-xl font-bold">War Room</h2>
-                
-                <!-- Chat Area -->
-                <div id="chatArea" class="flex-1 bg-slate-800/30 rounded-lg p-4 custom-scrollbar overflow-y-auto space-y-4 border border-slate-800 flex flex-col">
-                    <div class="max-w-[80%] rounded-lg p-3 bg-slate-800 text-slate-200">
-                        <span class="text-xs font-bold opacity-70">Strategist AI</span>
-                        <p class="text-sm mt-1">Welcome to your War Room, {{ role }}. What is our strategy today?</p>
-                    </div>
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xl font-bold">Admin Panel</h2>
+                    <span class="text-xs bg-slate-800 px-3 py-1 rounded-full border border-slate-700 text-blue-400">
+                        System Overview
+                    </span>
                 </div>
-
-                <!-- Internal Warning Box -->
-                <div id="warningBox" class="hidden bg-red-900/20 border border-red-500/50 rounded-lg p-3 text-red-300 text-xs">
-                    <strong class="flex items-center gap-1 mb-1"><i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i> INTERNAL WARNING (Confidential)</strong>
-                    <p id="warningText" class="whitespace-pre-wrap"></p>
-                </div>
-
-                <!-- Input Area / Drafting Pad -->
-                <div class="h-40 bg-slate-800/80 rounded-lg border border-slate-700 p-3 flex flex-col gap-2 relative">
-                    <textarea id="inputText" placeholder="Ask for a strategy or draft an argument..." 
-                              class="flex-1 bg-transparent resize-none outline-none text-slate-200 placeholder-slate-500 text-sm font-mono custom-scrollbar"></textarea>
-                    
-                    <div class="flex justify-between items-center bg-slate-800/50 pt-2 border-t border-slate-700/50">
-                        <!-- Evidence Selector -->
-                        <div class="flex items-center gap-1 text-xs text-slate-400">
-                            <i data-lucide="paperclip" class="w-3.5 h-3.5"></i>
-                            <select id="evidenceSelect" class="bg-slate-700 border border-slate-600 rounded px-1.5 py-0.5 text-slate-200">
-                                <option value="">Attach Citation...</option>
-                            </select>
+                <div class="grid grid-cols-2 gap-6 flex-1 overflow-y-auto custom-scrollbar pr-1">
+                    <div class="bg-slate-800/50 p-5 rounded-xl border border-slate-700/50 space-y-4 backdrop-blur-sm self-start">
+                        <h3 class="font-semibold text-sm text-blue-400 flex items-center gap-2">
+                            <i data-lucide="plus-circle" class="w-4 h-4"></i> Create Case
+                        </h3>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">Title</label>
+                            <input type="text" id="newCaseTitle" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-slate-100">
                         </div>
-
-                        <div class="flex gap-2">
-                            <button onclick="handleSend()" class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 rounded text-xs font-semibold">
-                                Ask Strategist
-                            </button>
-                            <button onclick="fileMotion()" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded text-xs font-semibold flex items-center gap-1">
-                                <span>⚖️</span> File Motion
-                            </button>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">Description</label>
+                            <textarea id="newCaseDesc" class="w-full h-24 bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-slate-100 resize-none"></textarea>
+                        </div>
+                        <button onclick="createCase()" class="w-full bg-blue-600 hover:bg-blue-500 text-white p-2 rounded-lg font-semibold text-sm transition-all">
+                            Initialize Case
+                        </button>
+                    </div>
+                    <div class="bg-slate-800/50 p-5 rounded-xl border border-slate-700/50 space-y-4 backdrop-blur-sm">
+                        <h3 class="font-semibold text-sm text-amber-500 flex items-center gap-2">
+                            <i data-lucide="users" class="w-4 h-4"></i> Allocate & Assign
+                        </h3>
+                        <div id="adminCaseList" class="space-y-3">
+                            <div class="text-center text-slate-500 py-5 italic text-xs">Loading cases...</div>
                         </div>
                     </div>
                 </div>
             </div>
-            {% else %}
+            {% elif role == 'judge' %}
             <!-- JUDGE VIEW: THE BENCH -->
             <div class="flex-1 flex flex-col space-y-4 overflow-hidden">
                 <div class="flex items-center justify-between">
@@ -111,10 +114,33 @@
                         0 Actions Required
                     </span>
                 </div>
-                
-                <!-- Submissions List -->
-                <div id="submissionsList" class="flex-1 overflow-y-auto custom-scrollbar space-y-4">
-                    <div class="text-center text-slate-500 py-10 italic">No pending arguments. The Bench is clear.</div>
+                <div id="submissionsList" class="flex-1 overflow-y-auto custom-scrollbar space-y-4"></div>
+            </div>
+            {% else %}
+            <!-- PARTY VIEW: WAR ROOM -->
+            <div class="flex-1 flex flex-col space-y-4 overflow-hidden">
+                <h2 class="text-xl font-bold">War Room</h2>
+                <div id="chatArea" class="flex-1 bg-slate-800/30 rounded-lg p-4 custom-scrollbar overflow-y-auto space-y-4 border border-slate-800 flex flex-col">
+                    <div class="max-w-[80%] rounded-lg p-3 bg-slate-800 text-slate-200">
+                        <span class="text-xs font-bold opacity-70">Strategist AI</span>
+                        <p class="text-sm mt-1">Welcome, {{ role }}. What strategy do we pursue today?</p>
+                    </div>
+                </div>
+                <div id="warningBox" class="hidden bg-red-900/20 border border-red-500/50 rounded-lg p-3 text-red-300 text-xs"></div>
+                <div class="h-40 bg-slate-800/80 rounded-lg border border-slate-700 p-3 flex flex-col gap-2 relative">
+                    <textarea id="inputText" class="flex-1 bg-transparent resize-none outline-none text-slate-200 text-sm font-mono"></textarea>
+                    <div class="flex justify-between items-center bg-slate-800/50 pt-2 border-t border-slate-700/50">
+                        <div class="flex items-center gap-1 text-xs text-slate-400">
+                            <i data-lucide="paperclip" class="w-3.5 h-3.5"></i>
+                            <select id="evidenceSelect" class="bg-slate-700 border border-slate-600 rounded px-1.5 py-0.5 text-slate-200">
+                                <option value="">Attach Citation...</option>
+                            </select>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="handleSend()" class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 rounded text-xs">Ask AI</button>
+                            <button onclick="fileMotion()" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded text-xs">File Motion</button>
+                        </div>
+                    </div>
                 </div>
             </div>
             {% endif %}
@@ -168,23 +194,75 @@
     <script>
         lucide.createIcons();
         const role = "{{ role }}";
-        
-        // Polling setup
-        setInterval(() => {
-            loadTimeline();
-            loadSubmissions();
-        }, 5000);
+        let activeCaseId = null;
 
         // Initial Load
-        loadTimeline();
-        loadSubmissions();
+        loadCases();
 
-        // Load Timeline (Court Record)
-        async function loadTimeline() {
+        // Polling setup
+        setInterval(() => {
+            if (activeCaseId) {
+                loadTimeline();
+                if (role === 'judge' || role === 'accuser' || role === 'accused') {
+                    loadSubmissions();
+                }
+            }
+            if (role === 'admin') loadAdminCases();
+        }, 5000);
+
+        // Load cases allocated to the current user (or all if admin)
+        async function loadCases() {
             try {
-                const res = await fetch('/api/court_log');
+                const res = await fetch('/api/cases');
+                const cases = await res.json();
+                const select = document.getElementById('caseSelect');
+                if (!select) return;
+
+                const prev = select.value;
+                select.innerHTML = '<option value="">Select Case...</option>';
+                
+                cases.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.id;
+                    opt.innerText = `${c.title} (${c.status})`;
+                    select.appendChild(opt);
+                });
+                
+                if (cases.length > 0) {
+                    if (prev && cases.find(c => c.id == prev)) {
+                        select.value = prev;
+                    } else {
+                        select.value = cases[0].id;
+                    }
+                    switchCase();
+                } else if (role === 'admin') {
+                    loadAdminCases();
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        function switchCase() {
+            const select = document.getElementById('caseSelect');
+            if(!select) return;
+            activeCaseId = select.value;
+            if (!activeCaseId) return;
+            
+            loadTimeline();
+            if (role !== 'admin') {
+                loadSubmissions();
+            } else {
+                loadAdminCases();
+            }
+        }
+
+        // --- VIEW LOGIC ---
+        async function loadTimeline() {
+            if (!activeCaseId) return;
+            try {
+                const res = await fetch(`/api/court_log?case_id=${activeCaseId}`);
                 const log = await res.json();
                 const container = document.getElementById('courtLog');
+                if(!container) return;
                 container.innerHTML = '';
                 
                 log.reverse().forEach(item => {
@@ -203,79 +281,21 @@
             } catch (e) { console.error(e); }
         }
 
-        // --- PARTY LOGIC ---
-        async function handleSend() {
-            const text = document.getElementById('inputText').value;
-            if (!text.trim()) return;
-
-            appendChat('You', text, 'bg-blue-600 text-white self-end');
-            document.getElementById('inputText').value = '';
-
-            try {
-                const res = await fetch('/api/chat/strategy', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user_role: role, query_text: text })
-                });
-                const data = await res.json();
-
-                appendChat('Strategist AI', data.argument, 'bg-slate-700 text-slate-200');
-                
-                if (data.warning && data.warning !== "Strategist issued no warnings for this query.") {
-                    document.getElementById('warningBox').classList.remove('hidden');
-                    document.getElementById('warningText').innerText = data.warning;
-                } else {
-                    document.getElementById('warningBox').classList.add('hidden');
-                }
-            } catch (e) { console.error(e); }
-        }
-
-        function appendChat(sender, text, classes) {
-            const container = document.getElementById('chatArea');
-            const div = document.createElement('div');
-            div.className = `max-w-[80%] rounded-lg p-3 ${classes}`;
-            div.innerHTML = `
-                <span class="text-xs font-bold opacity-70">${sender}</span>
-                <p class="text-sm mt-1 whitespace-pre-wrap">${text}</p>
-            `;
-            container.appendChild(div);
-            container.scrollTop = container.scrollHeight;
-        }
-
-        async function fileMotion() {
-            const text = document.getElementById('inputText').value;
-            const ref = document.getElementById('evidenceSelect').value;
-            if (!text.trim()) return alert("Enter argument first.");
-
-            try {
-                const res = await fetch('/api/submit_argument', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        user_role: role,
-                        argument_text: text,
-                        evidence_ids: ref ? [ref] : []
-                    })
-                });
-                const data = await res.json();
-                alert(data.message);
-                document.getElementById('inputText').value = '';
-                loadTimeline();
-            } catch (e) { console.error(e); }
-        }
-
-        // --- JUDGE LOGIC ---
         async function loadSubmissions() {
+            if (!activeCaseId) return;
             try {
-                const res = await fetch('/api/judge/pending');
+                const res = await fetch(`/api/judge/pending?case_id=${activeCaseId}`);
                 const subs = await res.json();
                 const container = document.getElementById('submissionsList');
+                if(!container) return;
                 container.innerHTML = '';
 
-                // Filter for party view
                 const filteredSubs = role === 'judge' ? subs : subs.filter(s => s.sender === role || s.status === 'admitted');
 
-                document.getElementById('pendingCount').innerText = `${filteredSubs.filter(s => s.status === 'pending' || s.status === 'inquiry').length} Actions Required`;
+                const counter = document.getElementById('pendingCount');
+                if(counter) {
+                    counter.innerText = `${filteredSubs.filter(s => s.status === 'pending' || s.status === 'inquiry').length} Actions Required`;
+                }
 
                 if (filteredSubs.length === 0) {
                     container.innerHTML = '<div class="text-center text-slate-500 py-10 italic">No pending arguments.</div>';
@@ -290,19 +310,6 @@
                     if (sub.status === 'admitted') statusColor = 'bg-green-500';
                     if (sub.status === 'rejected') statusColor = 'bg-red-500';
 
-                    let inquiryHtml = '';
-                    if (sub.inquiries && sub.inquiries.length > 0) {
-                        inquiryHtml = '<div class="mt-2 text-xs border-l-2 border-amber-400 pl-2 space-y-1">';
-                        sub.inquiries.forEach(inq => {
-                            inquiryHtml += `
-                                <div><b class="text-amber-400">Q:</b> ${inq.question}</div>
-                                ${inq.response ? `<div class="text-slate-300"><b class="text-green-400">A:</b> ${inq.response}</div>` : 
-                                  (role !== 'judge' && sub.sender === role ? `<button onclick="openResponseModal('${sub.id}', '${inq.id}', '${inq.question.replace(/'/g, "\\'")}')" class="text-blue-400 underline p-0 m-0">Respond</button>` : `<div class="text-slate-500 italic">Awaiting response...</div>`)}
-                            `;
-                        });
-                        inquiryHtml += '</div>';
-                    }
-
                     div.innerHTML = `
                         <div class="absolute top-0 left-0 w-1 h-full ${statusColor}"></div>
                         <div class="flex justify-between text-xs text-slate-400 mb-1 pl-2">
@@ -311,13 +318,8 @@
                         </div>
                         <p class="text-sm text-slate-200 mt-2 pl-2 font-serif bg-slate-900/40 p-2 rounded">"${sub.argument}"</p>
                         
-                        <div class="mt-2 pl-2 text-[10px] text-slate-500">References: ${sub.references.join(', ') || 'None'}</div>
-
-                        ${inquiryHtml}
-
                         ${role === 'judge' && sub.status === 'pending' ? `
                         <div class="mt-4 flex gap-2 justify-end">
-                            <button onclick="openInquiryModal('${sub.id}')" class="px-2 py-1 bg-slate-700 rounded text-xs text-slate-100">Inquiry</button>
                             <button onclick="verifySubmission('${sub.id}', 'admitted')" class="px-2 py-1 bg-green-600 rounded text-xs text-white">Admit</button>
                             <button onclick="verifySubmission('${sub.id}', 'rejected')" class="px-2 py-1 bg-red-600 rounded text-xs text-white">Reject</button>
                         </div>
@@ -328,83 +330,132 @@
             } catch (e) { console.error(e); }
         }
 
-        // --- COMMON LOGIC ---
-        function openInquiryModal(subId) {
-            document.getElementById('inquirySubId').value = subId;
-            document.getElementById('inquiryModal').classList.remove('hidden');
-        }
-        function closeModal() { document.getElementById('inquiryModal').classList.add('hidden'); }
-
-        function openResponseModal(subId, inqId, question) {
-            document.getElementById('responseSubId').value = subId;
-            document.getElementById('responseInqId').value = inqId;
-            document.getElementById('inquiryQuestion').innerText = `Q: ${question}`;
-            document.getElementById('responseModal').classList.remove('hidden');
-        }
-        function closeResponseModal() { document.getElementById('responseModal').classList.add('hidden'); }
-
-        async function submitInquiry() {
-            const subId = document.getElementById('inquirySubId').value;
-            const text = document.getElementById('inquiryText').value;
+        // --- ADMIN SPECIFIC LOGIC ---
+        async function createCase() {
+            const title = document.getElementById('newCaseTitle').value;
+            const desc = document.getElementById('newCaseDesc').value;
             
-            const res = await fetch('/api/judge/inquiry', {
+            if (!title.trim()) return alert("Enter case title.");
+
+            const res = await fetch('/api/admin/create_case', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ submission_id: subId, question_text: text })
+                body: JSON.stringify({ title: title, description: desc })
+            });
+            
+            if (res.ok) {
+                alert("Case created.");
+                document.getElementById('newCaseTitle').value = '';
+                document.getElementById('newCaseDesc').value = '';
+                loadCases();
+            }
+        }
+
+        async function loadAdminCases() {
+            try {
+                const [casesRes, usersRes] = await Promise.all([
+                    fetch('/api/admin/cases'),
+                    fetch('/api/admin/users')
+                ]);
+                const cases = await casesRes.json();
+                const users = await usersRes.json();
+                
+                const container = document.getElementById('adminCaseList');
+                if(!container) return;
+                container.innerHTML = '';
+
+                if (cases.length === 0) {
+                    container.innerHTML = '<div class="text-center text-slate-500 py-5 italic text-xs">No cases found. Create one.</div>';
+                    return;
+                }
+
+                cases.forEach(c => {
+                    const div = document.createElement('div');
+                    div.className = "bg-slate-900/50 p-3 rounded-lg border border-slate-700/50 space-y-2";
+                    
+                    const judges = users.filter(u => u.role === 'judge');
+                    const accusers = users.filter(u => u.role === 'accuser');
+                    const accuseds = users.filter(u => u.role === 'accused');
+
+                    div.innerHTML = `
+                        <div class="flex justify-between items-center border-b border-slate-800 pb-1">
+                            <span class="font-bold text-slate-200">${c.title}</span>
+                            <span class="text-[9px] bg-slate-800 px-1 rounded text-slate-400 capitalize">${c.status}</span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-1 text-[10px]">
+                            <div>
+                                <span class="block text-slate-500">Judge</span>
+                                <select onchange="allocateCase('${c.id}', 'judge_id', this.value)" class="bg-slate-800 border border-slate-700 rounded p-1 w-full text-slate-200">
+                                    <option value="">${c.judge}</option>
+                                    ${judges.map(u => `<option value="${u.id}">${u.username}</option>`).join('')}
+                                </select>
+                            </div>
+                            <div>
+                                <span class="block text-slate-500">Accuser</span>
+                                <select onchange="allocateCase('${c.id}', 'accuser_id', this.value)" class="bg-slate-800 border border-slate-700 rounded p-1 w-full text-slate-200">
+                                    <option value="">${c.accuser}</option>
+                                    ${accusers.map(u => `<option value="${u.id}">${u.username}</option>`).join('')}
+                                </select>
+                            </div>
+                            <div>
+                                <span class="block text-slate-500">Accused</span>
+                                <select onchange="allocateCase('${c.id}', 'accused_id', this.value)" class="bg-slate-800 border border-slate-700 rounded p-1 w-full text-slate-200">
+                                    <option value="">${c.accused}</option>
+                                    ${accuseds.map(u => `<option value="${u.id}">${u.username}</option>`).join('')}
+                                </select>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                });
+            } catch (e) { console.error(e); }
+        }
+
+        async function allocateCase(caseId, field, userId) {
+            if (!userId) return;
+            const body = { case_id: caseId };
+            body[field] = userId;
+
+            const res = await fetch('/api/admin/allocate_case', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(body)
             });
             if (res.ok) {
-                closeModal();
-                loadSubmissions();
+                alert("Allocation updated.");
+                loadAdminCases();
+            }
+        }
+
+        // --- PARTY LOGIC ---
+        async function fileMotion() {
+            if (!activeCaseId) return alert("No active case selected.");
+            const text = document.getElementById('inputText').value;
+            if (!text.trim()) return alert("Enter argument first.");
+
+            const res = await fetch('/api/submit_argument', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ case_id: activeCaseId, argument_text: text })
+            });
+            if (res.ok) {
+                alert("Argument filed.");
+                document.getElementById('inputText').value = '';
                 loadTimeline();
             }
         }
 
         async function verifySubmission(id, status) {
-            const notes = prompt("Enter notes for the record (optional):");
             const res = await fetch('/api/judge/verify', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ submission_id: id, status: status, notes: notes || '' })
+                body: JSON.stringify({ submission_id: id, status: status })
             });
             if (res.ok) loadSubmissions();
         }
 
-        async function handleUpload(input) {
-            if (!input.files[0]) return;
-            const formData = new FormData();
-            formData.append('file', input.files[0]);
-            formData.append('user_role', role);
-            formData.append('destination', role === 'judge' ? 'common' : 'private');
-
-            try {
-                const res = await fetch('/api/upload_doc', { method: 'POST', body: formData });
-                const data = await res.json();
-                alert(data.message);
-                // Future: Reload lists
-            } catch (e) { console.error(e); }
-        }
-
-        async function submitResponse() {
-            const subId = document.getElementById('responseSubId').value;
-            const inqId = document.getElementById('responseInqId').value;
-            const text = document.getElementById('responseText').value;
-
-            if (!text.trim()) return alert("Enter response text.");
-
-            const res = await fetch('/api/judge/respond_inquiry', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ submission_id: subId, inquiry_id: inqId, response_text: text })
-            });
-
-            if (res.ok) {
-                alert("Response filed.");
-                closeResponseModal();
-                loadSubmissions();
-            } else {
-                alert("Failed to file response.");
-            }
-        }
+        // Dummy handlers reserved for party chatbot Strategy if needed
+        async function handleSend() { alert("Strategy chat unavailable for offline test framework."); }
     </script>
 </body>
 </html>

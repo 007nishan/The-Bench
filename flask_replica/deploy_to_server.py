@@ -49,8 +49,10 @@ def deploy():
     # Commands to execute
     remote_dest = f"/home/{user}/flask_replica"
     commands = [
+        f"echo '{password}' | sudo -S apt-get install -y unzip", # Install unzip
         f"mkdir -p {remote_dest}",
         f"unzip -o {remote_zip} -d {remote_dest}",
+        f"sed -i 's/\\r$//' {remote_dest}/start_app.sh", # Fix CRLF line endings
         f"chmod +x {remote_dest}/start_app.sh",
         f"bash {remote_dest}/start_app.sh",
         "chmod +x /home/nishan/cloudflared",

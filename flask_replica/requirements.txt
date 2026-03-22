@@ -12,4 +12,6 @@ uvloop
 flask
 flask-cors
 chromadb
+flask-sqlalchemy
+flask-login
 
