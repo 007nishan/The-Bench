@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Bench - Login</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons (via unpkg) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a; /* slate-900 */
+        }
+    </style>
+</head>
+<body class="text-slate-100 flex h-screen items-center justify-center">
+
+    <div class="text-center space-y-8">
+        <div class="space-y-2">
+            <h1 class="text-5xl font-bold tracking-tight bg-gradient-to-r from-blue-400 via-slate-200 to-amber-400 bg-clip-text text-transparent">
+                The Bench
+            </h1>
+            <p class="text-slate-400 text-sm uppercase tracking-[0.2em]">Three Perspectives. One Truth.</p>
+        </div>
+
+        <div class="flex gap-6 mt-12">
+            <!-- Accuser Button -->
+            <button onclick="handleLogin('accuser')" class="group relative w-44 h-52 bg-slate-800 border border-slate-700 hover:border-blue-500 rounded-xl p-6 flex flex-col items-center justify-center gap-4 transition-all hover:scale-105 hover:shadow-[0_0_20px_rgba(59,130,246,0.2)]">
+                <div class="p-3 bg-slate-900 rounded-full group-hover:bg-blue-500/20 transition-colors">
+                    <i data-lucide="scale" class="w-8 h-8 text-blue-500"></i>
+                </div>
+                <span class="font-semibold text-slate-300 group-hover:text-blue-400">Accuser</span>
+            </button>
+
+            <!-- Judge Button -->
+            <button onclick="handleLogin('judge')" class="group relative w-44 h-52 bg-slate-800 border border-slate-700 hover:border-amber-500 rounded-xl p-6 flex flex-col items-center justify-center gap-4 transition-all hover:scale-105 hover:shadow-[0_0_20px_rgba(245,158,11,0.2)] z-10">
+                <div class="absolute -top-3 px-3 py-1 bg-amber-500/10 border border-amber-500/50 rounded-full text-[10px] text-amber-500 font-bold uppercase tracking-wider">
+                    Presiding
+                </div>
+                <div class="p-3 bg-slate-900 rounded-full group-hover:bg-amber-500/20 transition-colors">
+                    <i data-lucide="gavel" class="w-8 h-8 text-amber-500"></i>
+                </div>
+                <span class="font-semibold text-slate-300 group-hover:text-amber-400">Judge</span>
+            </button>
+
+            <!-- Accused Button -->
+            <button onclick="handleLogin('accused')" class="group relative w-44 h-52 bg-slate-800 border border-slate-700 hover:border-red-500 rounded-xl p-6 flex flex-col items-center justify-center gap-4 transition-all hover:scale-105 hover:shadow-[0_0_20px_rgba(239,68,68,0.2)]">
+                <div class="p-3 bg-slate-900 rounded-full group-hover:bg-red-500/20 transition-colors">
+                    <i data-lucide="shield" class="w-8 h-8 text-red-500"></i>
+                </div>
+                <span class="font-semibold text-slate-300 group-hover:text-red-400">Accused</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        function handleLogin(role) {
+            window.location.href = '/' + role;
+        }
+    </script>
+</body>
+</html>

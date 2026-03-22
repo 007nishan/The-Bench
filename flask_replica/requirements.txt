@@ -1,0 +1,15 @@
+fastapi
+uvicorn
+python-dotenv
+requests
+pydantic
+google-generativeai
+a2wsgi
+pytz
+python-multipart
+starlette
+uvloop
+flask
+flask-cors
+chromadb
+

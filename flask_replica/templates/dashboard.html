@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Bench - Dashboard ({{ role|capitalize }})</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #1e293b; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
+    </style>
+</head>
+<body class="text-slate-100 h-screen flex flex-col overflow-hidden">
+
+    <!-- Navbar -->
+    <header class="h-14 border-b border-slate-800 flex items-center justify-between px-6 bg-slate-900/50 backdrop-blur-md z-10">
+        <div class="flex items-center gap-2">
+            <i data-lucide="scale" class="w-6 h-6 text-amber-500"></i>
+            <span class="font-bold text-lg tracking-tight">The Bench</span>
+            <span class="text-xs bg-slate-800 px-2 py-0.5 rounded border border-slate-700 text-slate-400 uppercase">
+                {{ role }}
+            </span>
+        </div>
+        <div class="flex items-center gap-4">
+            <button onclick="window.location.href='/'" class="text-xs text-slate-400 hover:text-slate-200 flex items-center gap-1">
+                <i data-lucide="log-out" class="w-3.5 h-3.5"></i> Exit Chamber
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="flex-1 flex overflow-hidden">
+
+        <!-- Left Sidebar: Evidence Vault -->
+        <aside class="w-64 border-r border-slate-800 p-4 flex flex-col gap-4 bg-slate-900/30">
+            <div class="flex items-center justify-between">
+                <h3 class="font-semibold text-sm text-slate-300">Evidence Vault</h3>
+                <i data-lucide="folder" class="w-4 h-4 text-slate-500"></i>
+            </div>
+            
+            <!-- Upload Area -->
+            <div class="border border-dashed border-slate-700 rounded-lg p-3 text-center hover:border-slate-500 transition-colors cursor-pointer" onclick="document.getElementById('fileUpload').click()">
+                <i data-lucide="upload-cloud" class="w-6 h-6 mx-auto mb-1 text-slate-500"></i>
+                <span class="text-xs text-slate-400">Upload Doc (TXT/MD)</span>
+                <input type="file" id="fileUpload" class="hidden" accept=".txt,.md" onchange="handleUpload(this)">
+            </div>
+
+            <!-- Vault List -->
+            <div class="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-1 text-xs" id="vaultList">
+                <div class="text-slate-500 italic p-2">No documents found.</div>
+            </div>
+        </aside>
+
+        <!-- Center Workspace -->
+        <main class="flex-1 flex flex-col p-6 overflow-hidden border-r border-slate-800">
+            
+            {% if role != 'judge' %}
+            <!-- PARTY VIEW: WAR ROOM -->
+            <div class="flex-1 flex flex-col space-y-4 overflow-hidden">
+                <h2 class="text-xl font-bold">War Room</h2>
+                
+                <!-- Chat Area -->
+                <div id="chatArea" class="flex-1 bg-slate-800/30 rounded-lg p-4 custom-scrollbar overflow-y-auto space-y-4 border border-slate-800 flex flex-col">
+                    <div class="max-w-[80%] rounded-lg p-3 bg-slate-800 text-slate-200">
+                        <span class="text-xs font-bold opacity-70">Strategist AI</span>
+                        <p class="text-sm mt-1">Welcome to your War Room, {{ role }}. What is our strategy today?</p>
+                    </div>
+                </div>
+
+                <!-- Internal Warning Box -->
+                <div id="warningBox" class="hidden bg-red-900/20 border border-red-500/50 rounded-lg p-3 text-red-300 text-xs">
+                    <strong class="flex items-center gap-1 mb-1"><i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i> INTERNAL WARNING (Confidential)</strong>
+                    <p id="warningText" class="whitespace-pre-wrap"></p>
+                </div>
+
+                <!-- Input Area / Drafting Pad -->
+                <div class="h-40 bg-slate-800/80 rounded-lg border border-slate-700 p-3 flex flex-col gap-2 relative">
+                    <textarea id="inputText" placeholder="Ask for a strategy or draft an argument..." 
+                              class="flex-1 bg-transparent resize-none outline-none text-slate-200 placeholder-slate-500 text-sm font-mono custom-scrollbar"></textarea>
+                    
+                    <div class="flex justify-between items-center bg-slate-800/50 pt-2 border-t border-slate-700/50">
+                        <!-- Evidence Selector -->
+                        <div class="flex items-center gap-1 text-xs text-slate-400">
+                            <i data-lucide="paperclip" class="w-3.5 h-3.5"></i>
+                            <select id="evidenceSelect" class="bg-slate-700 border border-slate-600 rounded px-1.5 py-0.5 text-slate-200">
+                                <option value="">Attach Citation...</option>
+                            </select>
+                        </div>
+
+                        <div class="flex gap-2">
+                            <button onclick="handleSend()" class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 rounded text-xs font-semibold">
+                                Ask Strategist
+                            </button>
+                            <button onclick="fileMotion()" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded text-xs font-semibold flex items-center gap-1">
+                                <span>⚖️</span> File Motion
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <!-- JUDGE VIEW: THE BENCH -->
+            <div class="flex-1 flex flex-col space-y-4 overflow-hidden">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xl font-bold">Pending Review</h2>
+                    <span id="pendingCount" class="text-xs bg-slate-800 px-3 py-1 rounded-full border border-slate-700 text-amber-500">
+                        0 Actions Required
+                    </span>
+                </div>
+                
+                <!-- Submissions List -->
+                <div id="submissionsList" class="flex-1 overflow-y-auto custom-scrollbar space-y-4">
+                    <div class="text-center text-slate-500 py-10 italic">No pending arguments. The Bench is clear.</div>
+                </div>
+            </div>
+            {% endif %}
+
+        </main>
+
+        <!-- Right Sidebar: Court Record (Timeline) -->
+        <aside class="w-72 border-l border-slate-800 p-4 flex flex-col gap-4 bg-slate-900/30">
+            <div class="flex items-center justify-between">
+                <h3 class="font-semibold text-sm text-slate-300">Court Record</h3>
+                <i data-lucide="clock" class="w-4 h-4 text-slate-500"></i>
+            </div>
+            
+            <!-- Timeline Feed -->
+            <div id="courtLog" class="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-3 text-xs">
+                <!-- Log items will appear here -->
+            </div>
+        </aside>
+
+    </div>
+
+    <!-- Modal for Inquiry -->
+    <div id="inquiryModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+        <div class="bg-slate-800 border border-slate-700 rounded-lg p-5 w-96 space-y-4">
+            <h3 class="font-bold text-slate-200">Issue Bench Inquiry</h3>
+            <p class="text-xs text-slate-400">Ask a clarification question to the filing party.</p>
+            <textarea id="inquiryText" class="w-full h-24 bg-slate-900 border border-slate-700 rounded p-2 text-sm text-slate-200 resize-none" placeholder="Enter question..."></textarea>
+            <input type="hidden" id="inquirySubId">
+            <div class="flex justify-end gap-2">
+                <button onclick="closeModal()" class="px-3 py-1.5 bg-slate-700 rounded text-xs">Cancel</button>
+                <button onclick="submitInquiry()" class="px-3 py-1.5 bg-amber-500 text-slate-900 font-semibold rounded text-xs">Issue</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for response to inquiry -->
+    <div id="responseModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+        <div class="bg-slate-800 border border-slate-700 rounded-lg p-5 w-96 space-y-4">
+            <h3 class="font-bold text-slate-200">Respond to Inquiry</h3>
+            <p id="inquiryQuestion" class="text-xs text-slate-400 italic"></p>
+            <textarea id="responseText" class="w-full h-24 bg-slate-900 border border-slate-700 rounded p-2 text-sm text-slate-200 resize-none" placeholder="Enter response..."></textarea>
+            <input type="hidden" id="responseSubId">
+            <input type="hidden" id="responseInqId">
+            <div class="flex justify-end gap-2">
+                <button onclick="closeResponseModal()" class="px-3 py-1.5 bg-slate-700 rounded text-xs">Cancel</button>
+                <button onclick="submitResponse()" class="px-3 py-1.5 bg-blue-600 text-white font-semibold rounded text-xs">Submit Response</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+        const role = "{{ role }}";
+        
+        // Polling setup
+        setInterval(() => {
+            loadTimeline();
+            loadSubmissions();
+        }, 5000);
+
+        // Initial Load
+        loadTimeline();
+        loadSubmissions();
+
+        // Load Timeline (Court Record)
+        async function loadTimeline() {
+            try {
+                const res = await fetch('/api/court_log');
+                const log = await res.json();
+                const container = document.getElementById('courtLog');
+                container.innerHTML = '';
+                
+                log.reverse().forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = "p-2 bg-slate-800 border border-slate-700 rounded flex flex-col gap-1";
+                    div.innerHTML = `
+                        <div class="flex justify-between items-center">
+                            <span class="font-bold text-[10px] uppercase ${item.actor === 'Judge' ? 'text-amber-400' : 'text-slate-300'}">${item.actor}</span>
+                            <span class="text-[9px] text-slate-500">${item.timestamp}</span>
+                        </div>
+                        <span class="text-slate-400 font-semibold">${item.action}</span>
+                        <p class="text-slate-200">${item.details}</p>
+                    `;
+                    container.appendChild(div);
+                });
+            } catch (e) { console.error(e); }
+        }
+
+        // --- PARTY LOGIC ---
+        async function handleSend() {
+            const text = document.getElementById('inputText').value;
+            if (!text.trim()) return;
+
+            appendChat('You', text, 'bg-blue-600 text-white self-end');
+            document.getElementById('inputText').value = '';
+
+            try {
+                const res = await fetch('/api/chat/strategy', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_role: role, query_text: text })
+                });
+                const data = await res.json();
+
+                appendChat('Strategist AI', data.argument, 'bg-slate-700 text-slate-200');
+                
+                if (data.warning && data.warning !== "Strategist issued no warnings for this query.") {
+                    document.getElementById('warningBox').classList.remove('hidden');
+                    document.getElementById('warningText').innerText = data.warning;
+                } else {
+                    document.getElementById('warningBox').classList.add('hidden');
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        function appendChat(sender, text, classes) {
+            const container = document.getElementById('chatArea');
+            const div = document.createElement('div');
+            div.className = `max-w-[80%] rounded-lg p-3 ${classes}`;
+            div.innerHTML = `
+                <span class="text-xs font-bold opacity-70">${sender}</span>
+                <p class="text-sm mt-1 whitespace-pre-wrap">${text}</p>
+            `;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        async function fileMotion() {
+            const text = document.getElementById('inputText').value;
+            const ref = document.getElementById('evidenceSelect').value;
+            if (!text.trim()) return alert("Enter argument first.");
+
+            try {
+                const res = await fetch('/api/submit_argument', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_role: role,
+                        argument_text: text,
+                        evidence_ids: ref ? [ref] : []
+                    })
+                });
+                const data = await res.json();
+                alert(data.message);
+                document.getElementById('inputText').value = '';
+                loadTimeline();
+            } catch (e) { console.error(e); }
+        }
+
+        // --- JUDGE LOGIC ---
+        async function loadSubmissions() {
+            try {
+                const res = await fetch('/api/judge/pending');
+                const subs = await res.json();
+                const container = document.getElementById('submissionsList');
+                container.innerHTML = '';
+
+                // Filter for party view
+                const filteredSubs = role === 'judge' ? subs : subs.filter(s => s.sender === role || s.status === 'admitted');
+
+                document.getElementById('pendingCount').innerText = `${filteredSubs.filter(s => s.status === 'pending' || s.status === 'inquiry').length} Actions Required`;
+
+                if (filteredSubs.length === 0) {
+                    container.innerHTML = '<div class="text-center text-slate-500 py-10 italic">No pending arguments.</div>';
+                    return;
+                }
+
+                filteredSubs.forEach(sub => {
+                    const div = document.createElement('div');
+                    div.className = "bg-slate-800 rounded-lg border border-slate-700 p-4 shadow-sm relative";
+                    
+                    let statusColor = 'bg-amber-500';
+                    if (sub.status === 'admitted') statusColor = 'bg-green-500';
+                    if (sub.status === 'rejected') statusColor = 'bg-red-500';
+
+                    let inquiryHtml = '';
+                    if (sub.inquiries && sub.inquiries.length > 0) {
+                        inquiryHtml = '<div class="mt-2 text-xs border-l-2 border-amber-400 pl-2 space-y-1">';
+                        sub.inquiries.forEach(inq => {
+                            inquiryHtml += `
+                                <div><b class="text-amber-400">Q:</b> ${inq.question}</div>
+                                ${inq.response ? `<div class="text-slate-300"><b class="text-green-400">A:</b> ${inq.response}</div>` : 
+                                  (role !== 'judge' && sub.sender === role ? `<button onclick="openResponseModal('${sub.id}', '${inq.id}', '${inq.question.replace(/'/g, "\\'")}')" class="text-blue-400 underline p-0 m-0">Respond</button>` : `<div class="text-slate-500 italic">Awaiting response...</div>`)}
+                            `;
+                        });
+                        inquiryHtml += '</div>';
+                    }
+
+                    div.innerHTML = `
+                        <div class="absolute top-0 left-0 w-1 h-full ${statusColor}"></div>
+                        <div class="flex justify-between text-xs text-slate-400 mb-1 pl-2">
+                            <span>Filed by: <b class="uppercase">${sub.sender}</b></span>
+                            <span>${sub.timestamp}</span>
+                        </div>
+                        <p class="text-sm text-slate-200 mt-2 pl-2 font-serif bg-slate-900/40 p-2 rounded">"${sub.argument}"</p>
+                        
+                        <div class="mt-2 pl-2 text-[10px] text-slate-500">References: ${sub.references.join(', ') || 'None'}</div>
+
+                        ${inquiryHtml}
+
+                        ${role === 'judge' && sub.status === 'pending' ? `
+                        <div class="mt-4 flex gap-2 justify-end">
+                            <button onclick="openInquiryModal('${sub.id}')" class="px-2 py-1 bg-slate-700 rounded text-xs text-slate-100">Inquiry</button>
+                            <button onclick="verifySubmission('${sub.id}', 'admitted')" class="px-2 py-1 bg-green-600 rounded text-xs text-white">Admit</button>
+                            <button onclick="verifySubmission('${sub.id}', 'rejected')" class="px-2 py-1 bg-red-600 rounded text-xs text-white">Reject</button>
+                        </div>
+                        ` : ''}
+                    `;
+                    container.appendChild(div);
+                });
+            } catch (e) { console.error(e); }
+        }
+
+        // --- COMMON LOGIC ---
+        function openInquiryModal(subId) {
+            document.getElementById('inquirySubId').value = subId;
+            document.getElementById('inquiryModal').classList.remove('hidden');
+        }
+        function closeModal() { document.getElementById('inquiryModal').classList.add('hidden'); }
+
+        function openResponseModal(subId, inqId, question) {
+            document.getElementById('responseSubId').value = subId;
+            document.getElementById('responseInqId').value = inqId;
+            document.getElementById('inquiryQuestion').innerText = `Q: ${question}`;
+            document.getElementById('responseModal').classList.remove('hidden');
+        }
+        function closeResponseModal() { document.getElementById('responseModal').classList.add('hidden'); }
+
+        async function submitInquiry() {
+            const subId = document.getElementById('inquirySubId').value;
+            const text = document.getElementById('inquiryText').value;
+            
+            const res = await fetch('/api/judge/inquiry', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ submission_id: subId, question_text: text })
+            });
+            if (res.ok) {
+                closeModal();
+                loadSubmissions();
+                loadTimeline();
+            }
+        }
+
+        async function verifySubmission(id, status) {
+            const notes = prompt("Enter notes for the record (optional):");
+            const res = await fetch('/api/judge/verify', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ submission_id: id, status: status, notes: notes || '' })
+            });
+            if (res.ok) loadSubmissions();
+        }
+
+        async function handleUpload(input) {
+            if (!input.files[0]) return;
+            const formData = new FormData();
+            formData.append('file', input.files[0]);
+            formData.append('user_role', role);
+            formData.append('destination', role === 'judge' ? 'common' : 'private');
+
+            try {
+                const res = await fetch('/api/upload_doc', { method: 'POST', body: formData });
+                const data = await res.json();
+                alert(data.message);
+                // Future: Reload lists
+            } catch (e) { console.error(e); }
+        }
+
+        async function submitResponse() {
+            const subId = document.getElementById('responseSubId').value;
+            const inqId = document.getElementById('responseInqId').value;
+            const text = document.getElementById('responseText').value;
+
+            if (!text.trim()) return alert("Enter response text.");
+
+            const res = await fetch('/api/judge/respond_inquiry', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ submission_id: subId, inquiry_id: inqId, response_text: text })
+            });
+
+            if (res.ok) {
+                alert("Response filed.");
+                closeResponseModal();
+                loadSubmissions();
+            } else {
+                alert("Failed to file response.");
+            }
+        }
+    </script>
+</body>
+</html>
