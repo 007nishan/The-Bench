@@ -75,18 +75,18 @@
         </aside>
 
         <!-- Center Workspace -->
-        <main class="flex-1 flex flex-col p-6 overflow-hidden border-r border-slate-800">
+        <main class="flex-1 flex flex-col p-6 overflow-y-auto custom-scrollbar border-r border-slate-800">
             
             {% if role == 'admin' %}
             <!-- ADMIN VIEW: HEADQUARTERS -->
-            <div class="flex-1 flex flex-col space-y-4 overflow-hidden">
+            <div class="flex flex-col space-y-4">
                 <div class="flex items-center justify-between">
                     <h2 class="text-xl font-bold">Admin Panel</h2>
                     <span class="text-xs bg-slate-800 px-3 py-1 rounded-full border border-slate-700 text-blue-400">
                         System Overview
                     </span>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 flex-1 overflow-y-auto custom-scrollbar pr-1">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 pr-1">
                     <div class="bg-slate-800/50 p-5 rounded-xl border border-slate-700/50 space-y-4 backdrop-blur-sm self-start">
                         <h3 class="font-semibold text-sm text-blue-400 flex items-center gap-2">
                             <i data-lucide="plus-circle" class="w-4 h-4"></i> Create Case
@@ -123,7 +123,7 @@
             </div>
             {% elif role == 'judge' %}
             <!-- JUDGE VIEW: THE BENCH -->
-            <div class="flex-1 flex flex-col space-y-4 overflow-hidden">
+            <div class="flex flex-col space-y-4">
                 <!-- Tabs Nav -->
                 <div class="flex gap-2 border-b border-slate-800 pb-1.5 flex-shrink-0">
                     <button onclick="switchJudgeTab('review')" id="tabReview" class="px-3 py-1 text-xs font-bold rounded bg-slate-800 border border-slate-700 text-amber-500">Review Board</button>
@@ -131,7 +131,7 @@
                     <button onclick="switchJudgeTab('profile')" id="tabProfile" class="px-3 py-1 text-xs font-bold rounded bg-slate-900 border border-slate-800 text-slate-400">Profile</button>
                 </div>
 
-                <div id="panelReview" class="flex-1 flex flex-col space-y-4 overflow-hidden">
+                <div id="panelReview" class="flex flex-col space-y-4">
                     <div class="flex items-center justify-between">
                         <h2 class="text-xl font-bold">Pending Actions</h2>
                         <span id="pendingCount" class="text-xs bg-slate-800 px-3 py-1 rounded-full border border-slate-700 text-amber-500">
@@ -155,15 +155,15 @@
                     </div>
                 </div>
 
-                <div id="panelStudio" class="hidden flex-1 flex flex-col space-y-4 overflow-y-auto custom-scrollbar">
+                <div id="panelStudio" class="hidden flex-col space-y-4">
                     <h2 class="text-xl font-bold">Creator Studio</h2>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                         <!-- Post Article -->
                         <div class="bg-slate-840/40 p-4 rounded-xl border border-slate-700/50 space-y-2 bg-slate-900/40">
                             <h3 class="font-semibold text-sm text-slate-200 flex items-center gap-1"><i data-lucide="pen-tool" class="w-4 h-4 text-blue-400"></i> Post Article</h3>
                             <input id="artTitle" type="text" placeholder="Article Title..." class="w-full bg-slate-800 border border-slate-700 rounded p-1.5 text-xs text-slate-200">
-                            <textarea id="artContent" class="w-full h-24 bg-slate-800 border border-slate-700 rounded p-1.5 text-xs text-slate-200 resize-none" placeholder="Write content... Support articles lists."></textarea>
-                            <input id="artImage" type="text" placeholder="Image URL (Optional...)" class="w-full bg-slate-800 border border-slate-700 rounded p-1.5 text-xs text-slate-200">
+                            <textarea id="artContent" class="w-full h-24 bg-slate-800 border border-slate-700 rounded p-1.5 text-xs text-slate-200 resize-none" placeholder="Write content..."></textarea>
+                            <input id="artFile" type="file" accept="image/*,.pdf" class="w-full bg-slate-800 border border-slate-700 rounded p-1.5 text-xs text-slate-200 text-slate-400 file:mr-4 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer">
                             <button onclick="submitArticle()" class="w-full bg-blue-600 hover:bg-blue-500 text-white rounded p-1.5 text-xs font-bold">Publish Article</button>
                         </div>
                         <!-- Post Notice -->
@@ -171,17 +171,18 @@
                             <h3 class="font-semibold text-sm text-slate-200 flex items-center gap-1"><i data-lucide="megaphone" class="w-4 h-4 text-green-400"></i> Post Notice</h3>
                             <input id="notTitle" type="text" placeholder="Headline..." class="w-full bg-slate-800 border border-slate-700 rounded p-1.5 text-xs text-slate-200">
                             <textarea id="notContent" class="w-full h-24 bg-slate-800 border border-slate-700 rounded p-1.5 text-xs text-slate-200 resize-none" placeholder="Important notice details..."></textarea>
-                            <select id="notImportance" class="w-full bg-slate-800 border border-slate-700 rounded p-1.5 text-xs text-slate-200">
+                            <select id="notImportance" class="w-full bg-slate-800 border border-slate-700 rounded p-1.5 text-xs text-slate-200 mb-2">
                                 <option value="standard">Standard Notice</option>
                                 <option value="critical">Critical Announcement</option>
                             </select>
-                            <button onclick="submitNotice()" class="w-full bg-green-600 hover:bg-green-500 text-white rounded p-1.5 text-xs font-bold">Issue Notice</button>
+                            <input id="notFile" type="file" accept="image/*,.pdf" class="w-full bg-slate-800 border border-slate-700 rounded p-1.5 text-xs text-slate-200 text-slate-400 file:mr-4 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-green-600 file:text-white hover:file:bg-green-500 cursor-pointer">
+                            <button onclick="submitNotice()" class="w-full bg-green-600 hover:bg-green-500 text-white rounded p-1.5 text-xs font-bold mt-2">Issue Notice</button>
                         </div>
                     </div>
                 </div>
 
                 <!-- Profile Panel -->
-                <div id="panelProfile" class="hidden flex-1 flex flex-col space-y-4 overflow-y-auto custom-scrollbar">
+                <div id="panelProfile" class="hidden flex-col space-y-4">
                     <div class="bg-slate-800/50 p-5 rounded-xl border border-slate-700/50 space-y-4 max-w-lg bg-slate-900/40 mt-4">
                         <h3 class="font-semibold text-sm text-amber-500 flex items-center gap-1"><i data-lucide="user-cog" class="w-4 h-4"></i> Official Profile Settings</h3>
                         <div>
@@ -724,8 +725,22 @@
         async function submitArticle() {
             const title = document.getElementById('artTitle').value;
             const content = document.getElementById('artContent').value;
-            const imageUrl = document.getElementById('artImage').value;
+            const fileInput = document.getElementById('artFile');
             if (!title.trim() || !content.trim()) return alert("Title and Content required.");
+
+            let imageUrl = '';
+            // Upload attachment if present
+            if (fileInput.files.length > 0) {
+                const formData = new FormData();
+                formData.append('document', fileInput.files[0]);
+                try {
+                    const upRes = await fetch('/api/upload_doc', { method: 'POST', body: formData });
+                    if (upRes.ok) {
+                        const upData = await upRes.json();
+                        imageUrl = upData.file_url;
+                    } else { return alert("Failed to upload the appendix file."); }
+                } catch(e) { return alert("Network Error uploading attachment."); }
+            }
 
             const res = await fetch('/api/judge/post_article', {
                 method: 'POST',
@@ -737,15 +752,29 @@
                 alert("Article published successfully.");
                 document.getElementById('artTitle').value = '';
                 document.getElementById('artContent').value = '';
-                document.getElementById('artImage').value = '';
+                fileInput.value = '';
             } else { alert("Failed to publish article."); }
         }
 
         async function submitNotice() {
             const title = document.getElementById('notTitle').value;
-            const content = document.getElementById('notContent').value;
+            let content = document.getElementById('notContent').value;
             const importance = document.getElementById('notImportance').value;
+            const fileInput = document.getElementById('notFile');
             if (!title.trim() || !content.trim()) return alert("Headline and details required.");
+
+            // Upload attachment if present and append to notice text intelligently natively
+            if (fileInput && fileInput.files.length > 0) {
+                const formData = new FormData();
+                formData.append('document', fileInput.files[0]);
+                try {
+                    const upRes = await fetch('/api/upload_doc', { method: 'POST', body: formData });
+                    if (upRes.ok) {
+                        const upData = await upRes.json();
+                        content += `\n\n🔗 Appendix Link: ${upData.file_url}`;
+                    } else { return alert("Failed to upload notice attachment."); }
+                } catch(e) { return alert("Network Error uploading attachment."); }
+            }
 
             const res = await fetch('/api/judge/post_notice', {
                 method: 'POST',
@@ -757,6 +786,7 @@
                 alert("Notice issued.");
                 document.getElementById('notTitle').value = '';
                 document.getElementById('notContent').value = '';
+                if(fileInput) fileInput.value = '';
             } else { alert("Failed to issue notice."); }
         }
 
