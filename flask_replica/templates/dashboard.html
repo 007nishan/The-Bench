@@ -125,8 +125,9 @@
             <!-- JUDGE VIEW: THE BENCH -->
             <div class="flex flex-col space-y-4">
                 <!-- Tabs Nav -->
-                <div class="flex gap-2 border-b border-slate-800 pb-1.5 flex-shrink-0">
+                <div class="flex gap-2 border-b border-slate-800 pb-1.5 flex-shrink-0 flex-wrap">
                     <button onclick="switchJudgeTab('review')" id="tabReview" class="px-3 py-1 text-xs font-bold rounded bg-slate-800 border border-slate-700 text-amber-500">Review Board</button>
+                    <button onclick="switchJudgeTab('initiate')" id="tabInitiate" class="px-3 py-1 text-xs font-bold rounded bg-slate-900 border border-slate-800 text-slate-400">⚖ Initiate Suo Motu</button>
                     <button onclick="switchJudgeTab('studio')" id="tabStudio" class="px-3 py-1 text-xs font-bold rounded bg-slate-900 border border-slate-800 text-slate-400">Creator Studio</button>
                     <button onclick="switchJudgeTab('profile')" id="tabProfile" class="px-3 py-1 text-xs font-bold rounded bg-slate-900 border border-slate-800 text-slate-400">Profile</button>
                 </div>
@@ -152,6 +153,34 @@
                                 <button onclick="openDecisionModal()" class="bg-red-600 hover:bg-red-500 text-white px-3 py-1.5 rounded text-xs">Resolve Case</button>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- Stakeholder Assignment & Summon (shown when a case is active) -->
+                    <div id="judgeStakeholderBlock" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-3">
+                        <div class="bg-slate-800/50 p-3 rounded-xl border border-slate-700/50 space-y-2">
+                            <h4 class="text-xs font-bold text-blue-400 flex items-center gap-1"><i data-lucide="user-plus" class="w-3.5 h-3.5"></i> Assign Stakeholder Role</h4>
+                            <select id="stakeholderUserId" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-200"></select>
+                            <input id="stakeholderRole" type="text" placeholder="Custom Role (e.g. Plaintiff, Witness)" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-200">
+                            <button onclick="assignStakeholder()" class="w-full bg-blue-600 hover:bg-blue-500 text-white rounded p-1.5 text-xs font-bold">Assign Role</button>
+                        </div>
+                        <div class="bg-slate-800/50 p-3 rounded-xl border border-red-900/40 space-y-2">
+                            <h4 class="text-xs font-bold text-red-400 flex items-center gap-1"><i data-lucide="mail-warning" class="w-3.5 h-3.5"></i> Issue Court Summon</h4>
+                            <input id="summonName" type="text" placeholder="Target Name / Entity" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-200">
+                            <input id="summonRole" type="text" placeholder="Purpose (e.g. Witness, CBI Officer)" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-200">
+                            <button onclick="issueSummon()" class="w-full bg-red-700 hover:bg-red-600 text-white rounded p-1.5 text-xs font-bold">Issue Summon</button>
+                        </div>
+                    </div>
+                    <div id="stakeholdersList" class="hidden space-y-1.5"><p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-700 pb-1">Assigned Parties & Summons</p></div>
+                </div>
+
+                <!-- Initiate Suo Motu Panel -->
+                <div id="panelInitiate" class="hidden flex-col space-y-4">
+                    <div class="bg-slate-800/50 p-5 rounded-xl border border-amber-900/40 space-y-3 max-w-lg">
+                        <h3 class="font-bold text-amber-400 flex items-center gap-2"><i data-lucide="scale" class="w-4 h-4"></i> Court-Initiated (Suo Motu) Case</h3>
+                        <p class="text-xs text-slate-400">As a presiding Judge, you may initiate a case on the Court's own motion. This case is immediately active under your jurisdiction.</p>
+                        <input id="suoMotuTitle" type="text" placeholder="Case Title / Matter" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-slate-200">
+                        <textarea id="suoMotuDesc" class="w-full h-24 bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-slate-200 resize-none" placeholder="Describe the legal matter / public interest concern..."></textarea>
+                        <button onclick="judgeInitiateCase()" class="w-full bg-amber-600 hover:bg-amber-500 text-slate-900 font-bold rounded-lg p-2 text-sm flex items-center justify-center gap-2"><i data-lucide="gavel" class="w-4 h-4"></i> Initiate Case</button>
                     </div>
                 </div>
 
@@ -552,28 +581,8 @@
                             </div>
                             <span class="text-[9px] bg-slate-800 px-1 rounded text-slate-400 capitalize h-fit">${c.status}</span>
                         </div>
-                        <div class="grid grid-cols-3 gap-1 text-[10px]">
-                            <div>
-                                <span class="block text-slate-500">Judge</span>
-                                <select onchange="allocateCase('${c.id}', 'judge_id', this.value)" class="bg-slate-900 border border-slate-700 rounded p-0.5 w-full text-slate-300">
-                                    <option value="">${c.judge || 'Unassigned'}</option>
-                                    ${judges.map(u => `<option value="${u.id}">${u.username}</option>`).join('')}
-                                </select>
-                            </div>
-                            <div>
-                                <span class="block text-slate-500">Accuser</span>
-                                <select onchange="allocateCase('${c.id}', 'accuser_id', this.value)" class="bg-slate-900 border border-slate-700 rounded p-0.5 w-full text-slate-300" ${isPublic ? 'disabled' : ''}>
-                                    <option value="">${isPublic ? 'Public Filer' : (c.accuser || 'Unassigned')}</option>
-                                    ${accusers.map(u => `<option value="${u.id}">${u.username}</option>`).join('')}
-                                </select>
-                            </div>
-                            <div>
-                                <span class="block text-slate-500">Accused</span>
-                                <select onchange="allocateCase('${c.id}', 'accused_id', this.value)" class="bg-slate-900 border border-slate-700 rounded p-0.5 w-full text-slate-300">
-                                    <option value="">${c.accused || 'Unassigned'}</option>
-                                    ${accuseds.map(u => `<option value="${u.id}">${u.username}</option>`).join('')}
-                                </select>
-                            </div>
+                        <div class="grid grid-cols-1 gap-1 text-[10px] bg-slate-900/50 p-1.5 rounded-lg border border-slate-700 mt-2">
+                            <span class="text-slate-500 font-semibold mb-0.5 pb-0.5">Assigned Judge: <span class="text-amber-500 ml-1 font-bold">${c.judge}</span></span>
                         </div>
                     `;
                     container.appendChild(div);
@@ -605,22 +614,7 @@
                 alert("Failed to update role.");
             }
         }
-
-        async function allocateCase(caseId, field, userId) {
-            if (!userId) return;
-            const body = { case_id: caseId };
-            body[field] = userId;
-
-            const res = await fetch('/api/admin/allocate_case', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(body)
-            });
-            if (res.ok) {
-                alert("Allocation updated.");
-                loadAdminCases();
-            }
-        }
+        // Allocation handler deleted natively per Judicial constraints
 
         // --- JUDGE LOGIC ---
         function openDecisionModal() {
@@ -681,21 +675,78 @@
         }
 
         function switchJudgeTab(tab) {
-            const panels = ['Review', 'Studio', 'Profile'];
+            const panels = ['Review', 'Initiate', 'Studio', 'Profile'];
             panels.forEach(p => {
                 const el = document.getElementById(`panel${p}`);
                 const btn = document.getElementById(`tab${p}`);
                 if (el && btn) {
                      if (p.toLowerCase() === tab) {
                           el.classList.remove('hidden');
+                          el.classList.add('flex');
                           btn.className = "px-3 py-1 text-xs font-bold rounded bg-slate-800 border border-slate-700 text-amber-500";
                      } else {
                           el.classList.add('hidden');
+                          el.classList.remove('flex');
                           btn.className = "px-3 py-1 text-xs font-bold rounded bg-slate-900 border border-slate-800 text-slate-400";
                      }
                 }
             });
             if (tab === 'profile') loadProfile();
+        }
+
+        async function judgeInitiateCase() {
+            const title = document.getElementById('suoMotuTitle').value.trim();
+            const desc = document.getElementById('suoMotuDesc').value.trim();
+            if (!title) return alert("Case title is required.");
+            const res = await fetch('/api/judge/initiate_case', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ title, description: desc })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                alert(data.message);
+                document.getElementById('suoMotuTitle').value = '';
+                document.getElementById('suoMotuDesc').value = '';
+                loadCases();
+            } else { alert(data.error || "Failed to initiate case."); }
+        }
+
+        async function assignStakeholder() {
+            if (!activeCaseId) return alert("Select a case from the sidebar first.");
+            const userId = document.getElementById('stakeholderUserId').value;
+            const role = document.getElementById('stakeholderRole').value.trim();
+            if (!userId || !role) return alert("Select a user and enter a role name.");
+            const res = await fetch('/api/judge/add_stakeholder', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ case_id: activeCaseId, user_id: userId, custom_role_name: role })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                alert(data.message);
+                document.getElementById('stakeholderRole').value = '';
+                loadCases();
+            } else { alert(data.error || "Failed to assign stakeholder."); }
+        }
+
+        async function issueSummon() {
+            if (!activeCaseId) return alert("Select a case from the sidebar first.");
+            const name = document.getElementById('summonName').value.trim();
+            const role = document.getElementById('summonRole').value.trim();
+            if (!name || !role) return alert("Target name and purpose are required.");
+            const res = await fetch('/api/judge/issue_summon', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ case_id: activeCaseId, target_name: name, target_role: role })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                alert(data.message);
+                document.getElementById('summonName').value = '';
+                document.getElementById('summonRole').value = '';
+                loadCases();
+            } else { alert(data.error || "Failed to issue summon."); }
         }
 
         async function loadProfile() {

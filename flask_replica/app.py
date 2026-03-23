@@ -11,7 +11,7 @@ load_dotenv()
 
 import rag_engine
 import case_manager
-from models import db, User, Case, Submission, Inquiry, Article, Notice
+from models import db, User, Case, Submission, Inquiry, Article, Notice, Stakeholder, Summon
 from auth import auth_bp
 from flask_login import LoginManager, login_required, current_user
 
@@ -388,27 +388,45 @@ def admin_create_case():
     db.session.commit()
     return jsonify({"status": "success", "case_id": c.id, "message": "Case created."})
 
-@app.route('/api/admin/allocate_case', methods=['POST'])
+@app.route('/api/judge/add_stakeholder', methods=['POST'])
 @login_required
-def admin_allocate_case():
-    if current_user.role != 'admin':
+def add_stakeholder():
+    if current_user.role != 'judge':
         return jsonify({"error": "Forbidden"}), 403
     data = request.get_json()
     case_id = data.get('case_id')
-    judge_id = data.get('judge_id')
-    accuser_id = data.get('accuser_id')
-    accused_id = data.get('accused_id')
+    user_id = data.get('user_id')
+    custom_role = data.get('custom_role_name')
     
     c = Case.query.get(case_id)
-    if not c:
-        return jsonify({"error": "Case not found"}), 404
+    if not c or c.judge_id != current_user.id:
+        return jsonify({"error": "Unauthorized"}), 403
         
-    if judge_id: c.judge_id = judge_id
-    if accuser_id: c.accuser_id = accuser_id
-    if accused_id: c.accused_id = accused_id
-
+    s = Stakeholder(case_id=case_id, user_id=user_id, custom_role_name=custom_role)
+    db.session.add(s)
     db.session.commit()
-    return jsonify({"status": "success", "message": "Case allocated. Pending judicial review."})
+    return jsonify({"status": "success", "message": f"{custom_role} assigned successfully."})
+
+@app.route('/api/judge/issue_summon', methods=['POST'])
+@login_required
+def issue_summon():
+    if current_user.role != 'judge':
+        return jsonify({"error": "Forbidden"}), 403
+    data = request.get_json()
+    case_id = data.get('case_id')
+    
+    c = Case.query.get(case_id)
+    if not c or c.judge_id != current_user.id:
+        return jsonify({"error": "Unauthorized"}), 403
+        
+    s = Summon(
+        case_id=case_id,
+        target_name=data.get('target_name'),
+        target_role=data.get('target_role')
+    )
+    db.session.add(s)
+    db.session.commit()
+    return jsonify({"status": "success", "message": f"Summon issued to {s.target_name} ({s.target_role})."})
 
 @app.route('/api/judge/admit_case', methods=['POST'])
 @login_required
@@ -420,10 +438,21 @@ def admit_case():
     action = data.get('action') # 'active' or 'rejected'
     
     c = Case.query.get(case_id)
-    if c and c.judge_id == current_user.id:
+    if not c: return jsonify({"error": "Case not found"}), 404
+
+    # Judge claiming an unassigned case
+    if c.status == 'pending_admission' and not c.judge_id:
+        c.judge_id = current_user.id
+        c.status = 'active'
+        db.session.commit()
+        return jsonify({"status": "success", "message": "Case formally admitted and claimed."})
+
+    # Judge actioning on owned case
+    if action and c.judge_id == current_user.id:
         c.status = action
         db.session.commit()
         return jsonify({"status": "success", "message": f"Case updated to {action} successfully."})
+    
     return jsonify({"error": "Invalid authority or case."}), 400
 
 @app.route('/api/cases', methods=['GET'])
@@ -432,15 +461,26 @@ def get_user_cases():
     if current_user.role == 'admin':
         cases = Case.query.all()
     elif current_user.role == 'judge':
-        cases = Case.query.filter_by(judge_id=current_user.id).all()
+        from sqlalchemy import or_
+        cases = Case.query.filter(or_(Case.judge_id == current_user.id, Case.status == 'pending_admission')).all()
     else:
-        cases = Case.query.filter((Case.accuser_id == current_user.id) | (Case.accused_id == current_user.id)).all()
+        stk_cases = [s.case_id for s in Stakeholder.query.filter_by(user_id=current_user.id).all()]
+        from sqlalchemy import or_
+        cases = Case.query.filter(or_(Case.accuser_id == current_user.id, Case.id.in_(stk_cases))).all()
         
     res = []
     for c in cases:
         j = User.query.get(c.judge_id) if c.judge_id else None
         acc = User.query.get(c.accuser_id) if c.accuser_id else None
         acd = User.query.get(c.accused_id) if c.accused_id else None
+        
+        # Load stakeholders and summons
+        stks = Stakeholder.query.filter_by(case_id=c.id).all()
+        stakeholder_data = [{"user": User.query.get(s.user_id).username if User.query.get(s.user_id) else 'Unknown', "role": s.custom_role_name} for s in stks]
+        
+        summons = Summon.query.filter_by(case_id=c.id).all()
+        summon_data = [{"name": s.target_name, "role": s.target_role, "fulfilled": s.is_fulfilled} for s in summons]
+        
         res.append({
             "id": c.id,
             "title": c.title,
@@ -450,9 +490,37 @@ def get_user_cases():
             "public_filer_contact": c.public_filer_contact,
             "judge": j.username if j else "Unassigned",
             "accuser": acc.username if acc else "Unassigned",
-            "accused": acd.username if acd else "Unassigned"
+            "accused": acd.username if acd else "Unassigned",
+            "stakeholders": stakeholder_data,
+            "summons": summon_data
         })
     return jsonify(res)
+
+@app.route('/api/judge/initiate_case', methods=['POST'])
+@login_required
+def judge_initiate_case():
+    if current_user.role != 'judge':
+        return jsonify({"error": "Forbidden"}), 403
+    data = request.get_json()
+    title = data.get('title', '').strip()
+    description = data.get('description', '').strip()
+    if not title:
+        return jsonify({"error": "Title is required"}), 400
+
+    new_case = Case(
+        title=title,
+        description=description,
+        status='active',         # Judge-initiated cases are immediately active
+        case_type='suo_motu',   # Suo-motu / court-initiated
+        judge_id=current_user.id
+    )
+    db.session.add(new_case)
+    db.session.commit()
+    return jsonify({
+        "status": "success",
+        "message": f"Case initiated by the Court. Ref: CN-{new_case.id:04d}",
+        "case_id": new_case.id
+    })
 
 @app.route('/api/judge/close_case', methods=['POST'])
 @login_required

@@ -69,6 +69,21 @@ class Notice(db.Model):
     timestamp = db.Column(db.DateTime, default=db.func.current_timestamp())
     judge_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
+class Stakeholder(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    case_id = db.Column(db.Integer, db.ForeignKey('case.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    custom_role_name = db.Column(db.String(50), nullable=False) # e.g. 'Plaintiff', 'Expert Witness'
+    timestamp = db.Column(db.DateTime, default=db.func.current_timestamp())
+
+class Summon(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    case_id = db.Column(db.Integer, db.ForeignKey('case.id'), nullable=False)
+    target_name = db.Column(db.String(100), nullable=False)
+    target_role = db.Column(db.String(50), nullable=False)
+    is_fulfilled = db.Column(db.Boolean, default=False)
+    timestamp = db.Column(db.DateTime, default=db.func.current_timestamp())
+
 class JudgeProfile(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), unique=True, nullable=False)
