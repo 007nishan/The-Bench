@@ -17,26 +17,34 @@
 <body class="text-slate-100 h-screen flex flex-col overflow-hidden">
 
     <!-- Navbar -->
-    <header class="h-14 border-b border-slate-800 flex items-center justify-between px-6 bg-slate-900/50 backdrop-blur-md z-10">
+    <header class="h-14 border-b border-slate-800 flex items-center justify-between px-6 bg-slate-900/50 backdrop-blur-md z-50 relative">
         <div class="flex items-center gap-2">
+            <button onclick="toggleSidebar('leftSidebar')" class="md:hidden text-slate-400 hover:text-slate-200">
+                <i data-lucide="menu" class="w-5 h-5"></i>
+            </button>
             <i data-lucide="scale" class="w-6 h-6 text-amber-500"></i>
-            <span class="font-bold text-lg tracking-tight">The Bench</span>
+            <span class="font-bold text-lg tracking-tight hidden sm:block">The Bench</span>
             <span class="text-xs bg-slate-800 px-2 py-0.5 rounded border border-slate-700 text-slate-400 uppercase">
                 {{ role }}
             </span>
         </div>
         <div class="flex items-center gap-4">
+            <button onclick="toggleSidebar('rightSidebar')" class="md:hidden text-slate-400 hover:text-slate-200">
+                <i data-lucide="clock" class="w-5 h-5"></i>
+            </button>
             <button onclick="window.location.href='/'" class="text-xs text-slate-400 hover:text-slate-200 flex items-center gap-1">
-                <i data-lucide="log-out" class="w-3.5 h-3.5"></i> Exit Chamber
+                <i data-lucide="log-out" class="w-3.5 h-3.5"></i> <span class="hidden sm:inline">Exit Chamber</span>
             </button>
         </div>
     </header>
 
     <!-- Main Container -->
-    <div class="flex-1 flex overflow-hidden">
+    <div class="flex-1 flex overflow-hidden relative">
+        <!-- Mobile Sidebar Backdrop -->
+        <div id="sidebarBackdrop" onclick="closeSidebars()" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-30 md:hidden transition-opacity"></div>
 
         <!-- Left Sidebar: Cases & Vault -->
-        <aside class="w-64 border-r border-slate-800 p-4 flex flex-col gap-4 bg-slate-900/30">
+        <aside id="leftSidebar" class="absolute shrink-0 md:relative z-40 w-64 h-full border-r border-slate-800 p-4 flex flex-col gap-4 bg-slate-900 md:bg-slate-900/30 transition-transform duration-300 transform -translate-x-full md:translate-x-0">
             <!-- Case Selection -->
             <div class="border-b border-slate-800/50 pb-4">
                 <div class="flex items-center justify-between mb-2">
@@ -227,7 +235,7 @@
         </main>
 
         <!-- Right Sidebar: Court Record (Timeline) -->
-        <aside class="w-72 border-l border-slate-800 p-4 flex flex-col gap-4 bg-slate-900/30">
+        <aside id="rightSidebar" class="absolute right-0 shrink-0 md:relative z-40 w-72 h-full border-l border-slate-800 p-4 flex flex-col gap-4 bg-slate-900 md:bg-slate-900/30 transition-transform duration-300 transform translate-x-full md:translate-x-0">
             <div class="flex items-center justify-between">
                 <h3 class="font-semibold text-sm text-slate-300">Court Record</h3>
                 <i data-lucide="clock" class="w-4 h-4 text-slate-500"></i>
@@ -286,6 +294,24 @@
             <div class="flex justify-end gap-2">
                 <button onclick="closeResponseModal()" class="px-3 py-1.5 bg-slate-700 rounded text-xs">Cancel</button>
                 <button onclick="submitResponse()" class="px-3 py-1.5 bg-blue-600 text-white font-semibold rounded text-xs">Submit Response</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Action Button -->
+    <button onclick="openFeedbackModal()" class="fixed bottom-6 right-6 lg:right-10 bg-red-600 hover:bg-red-500 text-white p-3 rounded-full shadow-lg z-50 flex items-center justify-center transition-transform hover:scale-105" title="Report Bug / Logic Fallacy">
+        <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+    </button>
+
+    <!-- Feedback Modal -->
+    <div id="feedbackModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 w-full max-w-sm space-y-4 shadow-2xl">
+            <h3 class="font-bold text-slate-200 flex items-center gap-2"><i data-lucide="bug" class="w-5 h-5 text-red-400"></i> Report Issue</h3>
+            <p class="text-xs text-slate-400">Found a bug or logical fallacy? Report it directly to the engineering team.</p>
+            <textarea id="feedbackText" class="w-full h-32 bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 resize-none focus:border-red-500 outline-none" placeholder="Describe the issue..."></textarea>
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="closeFeedbackModal()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 transition-colors rounded-lg text-xs font-semibold">Cancel</button>
+                <button onclick="submitFeedback()" class="px-4 py-2 bg-red-600 hover:bg-red-500 transition-colors text-white font-bold rounded-lg text-xs flex items-center gap-1"><i data-lucide="send" class="w-3.5 h-3.5"></i> Send Report</button>
             </div>
         </div>
     </div>
@@ -763,6 +789,44 @@
 
         // Dummy handlers reserved for party chatbot Strategy if needed
         async function handleSend() { alert("Strategy chat unavailable for offline test framework."); }
+
+        function toggleSidebar(id) {
+            const el = document.getElementById(id);
+            const backdrop = document.getElementById('sidebarBackdrop');
+            if(el.classList.contains('-translate-x-full') || el.classList.contains('translate-x-full')) {
+                el.classList.remove('-translate-x-full', 'translate-x-full');
+                el.classList.add('translate-x-0');
+                backdrop.classList.remove('hidden');
+            } else {
+                closeSidebars();
+            }
+        }
+        function closeSidebars() {
+            document.getElementById('leftSidebar').classList.remove('translate-x-0');
+            document.getElementById('leftSidebar').classList.add('-translate-x-full');
+            document.getElementById('rightSidebar').classList.remove('translate-x-0');
+            document.getElementById('rightSidebar').classList.add('translate-x-full');
+            document.getElementById('sidebarBackdrop').classList.add('hidden');
+        }
+
+        function openFeedbackModal() { document.getElementById('feedbackModal').classList.remove('hidden'); }
+        function closeFeedbackModal() { document.getElementById('feedbackModal').classList.add('hidden'); }
+        async function submitFeedback() {
+            const text = document.getElementById('feedbackText').value;
+            if(!text.trim()) return alert("Please enter details.");
+            try {
+                const res = await fetch('/api/public/submit_feedback', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ details: "Path: /dashboard\n" + text })
+                });
+                if(res.ok) {
+                    alert("Feedback sent successfully.");
+                    closeFeedbackModal();
+                    document.getElementById('feedbackText').value = '';
+                } else { alert("Failed to send feedback. Anti-spam throttle limits may be in effect."); }
+            } catch(e) { alert("Network error. Could not connect to reporting server."); }
+        }
     </script>
 </body>
 </html>

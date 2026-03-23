@@ -16,7 +16,7 @@ from auth import auth_bp
 from flask_login import LoginManager, login_required, current_user
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'dev-secret-key'
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', os.urandom(24))
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///the_bench.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -33,17 +33,40 @@ def load_user(user_id):
 
 app.register_blueprint(auth_bp)
 
+# --- Security Modules ---
+import time
+from functools import wraps
+import requests
+
+spam_dict = {}
+
+def rate_limit(limit=10, per=60):
+    def decorator(f):
+        @wraps(f)
+        def wrapped(*args, **kwargs):
+            ip = request.remote_addr
+            now = time.time()
+            if ip not in spam_dict:
+                spam_dict[ip] = []
+            spam_dict[ip] = [t for t in spam_dict[ip] if now - t < per]
+            if len(spam_dict[ip]) >= limit:
+                return jsonify({"error": "Rate limit exceeded. Try again later."}), 429
+            spam_dict[ip].append(now)
+            return f(*args, **kwargs)
+        return wrapped
+    return decorator
+
 # --- Routes for Pages ---
 
-@app.route('/')
+@app.route('/', methods=['GET'])
 def index():
     return render_template('index.html')
 
-@app.route('/login')
+@app.route('/login', methods=['GET'])
 def login_page():
     return render_template('login.html')
 
-@app.route('/dashboard/<role>')
+@app.route('/dashboard/<role>', methods=['GET'])
 @login_required
 def dashboard(role):
     if current_user.role != 'admin' and current_user.role != role:
@@ -70,6 +93,7 @@ def get_public_court_log():
 
 @app.route('/api/public/file_case', methods=['POST'])
 @login_required
+@rate_limit(limit=5, per=60)
 def file_public_case():
     data = request.get_json()
     title = data.get('title')
@@ -136,6 +160,7 @@ def strategy_chat():
 
 @app.route('/api/submit_argument', methods=['POST'])
 @login_required
+@rate_limit(limit=10, per=60)
 def submit_argument():
     try:
         data = request.get_json()
@@ -657,6 +682,25 @@ def admin_change_role():
         db.session.commit()
         return jsonify({"status": "success", "message": f"Role updated to {new_role}"})
     return jsonify({"error": "User not found"}), 404
+
+@app.route('/api/public/submit_feedback', methods=['POST'])
+@rate_limit(limit=3, per=120)
+def submit_feedback():
+    data = request.get_json()
+    details = data.get('details', 'No details provided.')
+    username = current_user.username if current_user.is_authenticated else "Anonymous User"
+    
+    msg = f"⚠️ **Bug/Logic Feedback**\nUser: {username}\nDetails:\n{details}"
+    
+    TOKEN = "8571904781:AAEhaViQiEihWOHShd0a0ywJ0BMufSh13p8"
+    CHAT_ID = "8687680759"
+    try:
+        url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+        requests.get(url, params={"chat_id": CHAT_ID, "text": msg}, timeout=5)
+    except:
+        pass
+        
+    return jsonify({"status": "success", "message": "Feedback sent directly to developers."})
 
 if __name__ == '__main__':
 
