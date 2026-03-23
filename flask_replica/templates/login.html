@@ -60,7 +60,6 @@
     <script>
         function switchTab(mode) {
             const form = document.getElementById('authForm');
-            const roleSel = document.getElementById('roleSelector');
             const submitBtn = document.getElementById('submitBtn');
             const loginTab = document.getElementById('loginTab');
             const signupTab = document.getElementById('signupTab');
@@ -69,13 +68,11 @@
 
             if (mode === 'signup') {
                 form.action = "/register";
-                roleSel.classList.remove('hidden');
                 submitBtn.innerText = "Register Account";
                 signupTab.className = "flex-1 py-1.5 text-xs font-semibold rounded-md bg-blue-600 text-white transition-all";
                 loginTab.className = "flex-1 py-1.5 text-xs font-semibold rounded-md text-slate-400 hover:text-slate-200 transition-all";
             } else {
                 form.action = "/login_submit";
-                roleSel.classList.add('hidden');
                 submitBtn.innerText = "Authenticate";
                 loginTab.className = "flex-1 py-1.5 text-xs font-semibold rounded-md bg-blue-600 text-white transition-all";
                 signupTab.className = "flex-1 py-1.5 text-xs font-semibold rounded-md text-slate-400 hover:text-slate-200 transition-all";
