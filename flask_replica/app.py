@@ -889,6 +889,30 @@ def get_feeds():
         "timestamp": i.timestamp.strftime("%Y-%m-%d %H:%M") if i.timestamp else ""
     } for i in items])
 
+@app.route('/api/feeds/bulk_insert', methods=['POST'])
+def bulk_insert_feeds():
+    data = request.get_json()
+    if not isinstance(data, list):
+         return jsonify({"error": "Invalid payload format"}), 400
+         
+    for i in data:
+         title = i.get('title')
+         category = i.get('category')
+         if not title or not category: continue
+         
+         existing = FeedItem.query.filter_by(title=title, category=category).first()
+         if not existing:
+             item = FeedItem(
+                 category=category,
+                 title=title,
+                 description=i.get('description', ''),
+                 image_url=i.get('image_url', ''),
+                 source_link=i.get('source_link', '')
+             )
+             db.session.add(item)
+    db.session.commit()
+    return jsonify({"status": "success", "message": f"Successfully injected {len(data)} feeds"})
+
 if __name__ == '__main__':
 
     with app.app_context():

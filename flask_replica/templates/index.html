@@ -44,6 +44,14 @@
                 <div class="text-center text-slate-500 py-10 italic">Select a case from the sidebar to view arguments.</div>
             </div>
         </main>
+
+        <!-- Right Sidebar: Live Law Feeds -->
+        <aside class="w-full md:w-72 h-1/3 md:h-full border-l border-slate-800 p-4 flex flex-col gap-3 bg-slate-900/50 overflow-y-auto shrink-0" id="liveFeedsSidebar">
+             <h3 class="font-bold text-xs text-slate-300 uppercase tracking-wider mb-1 border-b border-slate-700/50 pb-1 flex items-center gap-1">
+                 <i data-lucide="newspaper" class="text-[#C31F27] w-3.5 h-3.5"></i> Continuous Industry News
+             </h3>
+             <div id="feedsContainer" class="space-y-4"></div>
+        </aside>
     </div>
 
     <script>
@@ -190,8 +198,11 @@
              container.appendChild(grid);
 
               // INSERTED LOGIC
-              // --- LIVE LAW FEEDS ---
-              const feedCats = ["jobs", "corporate", "international", "labour", "tech"];
+                            // --- LIVE LAW FEEDS ---
+              const sidebarFeeds = document.getElementById('feedsContainer');
+              if (sidebarFeeds) {
+                  sidebarFeeds.innerHTML = '';
+                  const feedCats = ["jobs", "corporate", "international", "labour", "tech"];
               for (const cat of feedCats) {
                  const catHeader = document.createElement('h3');
                  catHeader.className = "font-bold text-slate-400 text-xs uppercase tracking-wider mt-6 mb-2 flex items-center gap-1 border-b border-slate-800 pb-1";
@@ -200,7 +211,7 @@
                  if (cat === 'labour') catTitle = "Labour & Service";
                  
                  catHeader.innerHTML = `<i data-lucide="newspaper" class="w-3.5 h-3.5 text-[#C31F27]"></i> ${catTitle} Updates`;
-                 container.appendChild(catHeader);
+                 sidebarFeeds.appendChild(catHeader);
              lucide.createIcons();
         }
 
