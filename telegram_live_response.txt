@@ -1,0 +1,4 @@
+--- STDOUT ---
+API_RESPONSE: 200 {"ok":true,"result":{"message_id":205,"from":{"id":8571904781,"is_bot":true,"first_name":"NishanServerBot","username":"NishanServerBot"},"chat":{"id":8687680759,"first_name":"Nishan","type":"private"},"date":1774258860,"text":"\ud83d\udee0\ufe0f test-message"}}
+
+--- STDERR ---

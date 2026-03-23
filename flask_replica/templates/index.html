@@ -108,13 +108,23 @@
                 body: JSON.stringify({ name, contact, title, description: desc, case_type: type })
             });
 
+            const data = await res.json();
+
             if(res.ok) {
-                alert("Case filed successfully! Awaiting Admin Admission.");
                 closeFileModal();
+                openReceiptModal(data.receipt);
                 loadCases();
             } else {
                 alert("Failed to file case.");
             }
+        }
+
+        function openReceiptModal(receipt) {
+            document.getElementById('receiptNumber').innerText = receipt;
+            document.getElementById('receiptModal').classList.remove('hidden');
+        }
+        function closeReceiptModal() {
+            document.getElementById('receiptModal').classList.add('hidden');
         }
 
         async function loadLandingContent() {
@@ -143,25 +153,78 @@
              if (!data.articles || data.articles.length === 0) {
                  grid.innerHTML = `<div class="col-span-2 text-slate-500 text-center py-10 italic text-xs">No insights published yet.</div>`;
              } else {
-                 data.articles.forEach(a => {
-                     const card = document.createElement('div');
-                     card.className = "bg-slate-800/50 p-3 rounded-xl border border-slate-700/40 space-y-2 flex flex-col justify-between hover:bg-slate-800/80 transition-all cursor-pointer";
-                     let imgHtml = a.image_url ? `<img src="${a.image_url}" class="w-full h-24 object-cover rounded-lg mb-1" onerror="this.remove()">` : '';
-                     card.innerHTML = `
-                         <div>
-                             ${imgHtml}
-                             <h4 class="font-bold text-slate-200 text-xs">${a.title}</h4>
-                             <p class="text-[10px] text-slate-400 line-clamp-3 mt-1 font-serif leading-relaxed">${a.content}</p>
-                         </div>
-                         <div class="text-[9px] text-blue-400 flex items-center gap-1 mt-2 border-t border-slate-700/40 pt-1 font-semibold">
-                             <i data-lucide="user" class="w-2.5 h-2.5"></i> Judge ${a.judge}
-                         </div>
-                     `;
-                     grid.appendChild(card);
-                 });
+                data.articles.forEach(a => {
+                    const card = document.createElement('div');
+                    card.className = "bg-slate-800/50 p-3 rounded-xl border border-slate-700/40 space-y-2 flex flex-col justify-between hover:bg-slate-800/80 transition-all cursor-pointer";
+                    let imgHtml = a.image_url ? `<img src="${a.image_url}" class="w-full h-24 object-cover rounded-lg mb-1" onerror="this.remove()">` : '';
+                    card.innerHTML = `
+                        <div onclick="openCommentsModal('article', ${a.id})">
+                            ${imgHtml}
+                            <h4 class="font-bold text-slate-200 text-xs">${a.title}</h4>
+                            <p class="text-[10px] text-slate-400 line-clamp-3 mt-1 font-serif leading-relaxed">${a.content}</p>
+                        </div>
+                        <div class="text-[9px] text-slate-400 flex justify-between items-center mt-2 border-t border-slate-700/40 pt-1 font-semibold">
+                            <span><i data-lucide="user" class="w-2.5 h-2.5 inline text-blue-400"></i> Judge ${a.judge}</span>
+                            <button onclick="event.stopPropagation(); openCommentsModal('article', ${a.id})" class="hover:text-amber-500 text-[10px] flex items-center gap-0.5"><i data-lucide="message-square" class="w-2.5 h-2.5"></i> Interact</button>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
              }
              container.appendChild(grid);
              lucide.createIcons();
+        }
+
+        async function openCommentsModal(type, id) {
+             document.getElementById('activeCommentType').value = type;
+             document.getElementById('activeCommentId').value = id;
+             document.getElementById('commentsModal').classList.remove('hidden');
+             loadComments(type, id);
+        }
+        function closeCommentsModal() {
+             document.getElementById('commentsModal').classList.add('hidden');
+        }
+
+        async function loadComments(type, id) {
+             const list = document.getElementById('commentsList');
+             list.innerHTML = '<div class="text-center text-slate-500 italic py-5">Loading comments...</div>';
+             const res = await fetch(`/api/public/comments?${type}_id=${id}`);
+             const comments = await res.json();
+             list.innerHTML = '';
+             
+             if(comments.length === 0) {
+                 list.innerHTML = '<div class="text-center text-slate-500 italic py-5">No responses yet. Start the debate.</div>';
+                 return;
+             }
+             
+             comments.forEach(c => {
+                 const div = document.createElement('div');
+                 div.className = "bg-slate-900/50 p-2 rounded-lg border border-slate-800";
+                 div.innerHTML = `<div class="flex justify-between font-bold text-blue-400 mb-0.5"><span>@${c.user}</span><span class="text-[8px] text-slate-500">${c.timestamp.split(' ')[1]}</span></div><p>${c.content}</p>`;
+                 list.appendChild(div);
+             });
+        }
+
+        async function submitComment() {
+             const text = document.getElementById('commentText').value;
+             const type = document.getElementById('activeCommentType').value;
+             const id = document.getElementById('activeCommentId').value;
+
+             if(!text.trim()) return;
+
+             const body = { content: text };
+             body[`${type}_id`] = id;
+
+             const res = await fetch('/api/comment', {
+                 method: 'POST',
+                 headers: {'Content-Type': 'application/json'},
+                 body: JSON.stringify(body)
+             });
+
+             if(res.ok) {
+                 document.getElementById('commentText').value = '';
+                 loadComments(type, id);
+             } else { alert("Failed to post comment."); }
         }
 
         loadCases();
@@ -208,6 +271,51 @@
             </div>
         </div>
     </div>
+    <!-- Modal for Receipt -->
+    <div id="receiptModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 w-80 space-y-4 shadow-2xl text-center">
+            <i data-lucide="check-circle" class="w-12 h-12 text-green-400 mx-auto animate-bounce"></i>
+            <h3 class="font-bold text-slate-100 text-lg">Case Filed Successfully!</h3>
+            <p class="text-xs text-slate-400">Please note down your unique Case Number for tracking and updates.</p>
+            <div class="bg-slate-900 border border-slate-700 rounded-lg p-3">
+                <span class="text-xs text-slate-500 uppercase font-semibold">Unique Case Number</span>
+                <div id="receiptNumber" class="text-xl font-mono font-bold text-amber-500 mt-1">CN-0000</div>
+            </div>
+            <p class="text-[10px] text-slate-400">Status updates will be notified via your provider or local dashboard login.</p>
+            <div class="flex justify-center gap-2 pt-2 border-t border-slate-700">
+                <button onclick="closeReceiptModal()" class="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 rounded-lg text-xs font-semibold text-white shadow-md">Done</button>
+            </div>
+        </div>
+    </div>
+    <!-- Modal for Comments -->
+    <div id="commentsModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 w-80 space-y-3 shadow-2xl">
+            <h3 class="font-bold text-slate-100 text-xs flex items-center gap-1">
+                <i data-lucide="message-circle" class="text-amber-500 w-4 h-4"></i> Interactions Board
+            </h3>
+            <div id="commentsList" class="max-h-48 overflow-y-auto space-y-1 text-[11px] text-slate-300 custom-scrollbar pr-1"></div>
+            
+            {% if current_user and current_user.is_authenticated %}
+            <div class="space-y-1 border-t border-slate-700/50 pt-2">
+                <input type="text" id="commentText" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-100 placeholder-slate-500" placeholder="Add response/opinion...">
+                <div class="flex justify-end gap-1">
+                    <button onclick="closeCommentsModal()" class="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs text-slate-300">Close</button>
+                    <button onclick="submitComment()" class="px-2 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded text-xs font-semibold">Post</button>
+                </div>
+            </div>
+            {% else %}
+            <div class="flex justify-between items-center border-t border-slate-700/50 pt-2 text-[10px] text-slate-500">
+                <span>Login to interact.</span>
+                <button onclick="closeCommentsModal()" class="px-2 py-0.5 bg-slate-700 hover:bg-slate-600 rounded">Close</button>
+            </div>
+            {% endif %}
+            
+            <input type="hidden" id="activeCommentType">
+            <input type="hidden" id="activeCommentId">
+        </div>
+    </div>
 </body>
+
+
 </html>
 

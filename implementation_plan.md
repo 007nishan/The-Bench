@@ -38,13 +38,16 @@
 ### A. The "Three Portal" System ✅
 
 1.  **The War Room (Accuser/Accused)** ✅
-    -   **Private Vault**: Upload/Manage private evidence ✅
-    -   **Strategist Chat**: Chat with biased LLM to draft arguments ✅
-    -   **Drafting Pad**: Text area to refine and "File Motion" ✅
+    -   **Private Vault**: Upload/Manage private## Verification Plan
 
-2.  **The Bench (Judge)** ✅
-    -   **Review Panel**: Incoming arguments from both parties ✅
-    -   **Verification System**: AI-powered citation checking ✅
+### Automated Tests
+1.  **Health Check**: Curl `http://192.168.1.150:5000/api/health`
+    -   Expect: `{"status": "online", ...}`
+2.  **Static Files**: Curl `http://192.168.1.150:5000/`
+    -   Expect: HTML response containing dashboard headers.
+
+### Manual Verification
+1.  Visit the **Cloudflare Tunnel URL** (Received via telegram_bridge or Cron trigger output) and verify fully fully rendered components.
     -   **Ruling Display**: Shows ADMITTED/REJECTED with reasoning ✅
 
 3.  **The Common Ground (Shared View)** ✅

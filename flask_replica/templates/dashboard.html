@@ -120,6 +120,7 @@
                 <div class="flex gap-2 border-b border-slate-800 pb-1.5 flex-shrink-0">
                     <button onclick="switchJudgeTab('review')" id="tabReview" class="px-3 py-1 text-xs font-bold rounded bg-slate-800 border border-slate-700 text-amber-500">Review Board</button>
                     <button onclick="switchJudgeTab('studio')" id="tabStudio" class="px-3 py-1 text-xs font-bold rounded bg-slate-900 border border-slate-800 text-slate-400">Creator Studio</button>
+                    <button onclick="switchJudgeTab('profile')" id="tabProfile" class="px-3 py-1 text-xs font-bold rounded bg-slate-900 border border-slate-800 text-slate-400">Profile</button>
                 </div>
 
                 <div id="panelReview" class="flex-1 flex flex-col space-y-4 overflow-hidden">
@@ -168,6 +169,29 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Profile Panel -->
+                <div id="panelProfile" class="hidden flex-1 flex flex-col space-y-4 overflow-y-auto custom-scrollbar">
+                    <div class="bg-slate-800/50 p-5 rounded-xl border border-slate-700/50 space-y-4 max-w-lg bg-slate-900/40 mt-4">
+                        <h3 class="font-semibold text-sm text-amber-500 flex items-center gap-1"><i data-lucide="user-cog" class="w-4 h-4"></i> Official Profile Settings</h3>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">Qualifications</label>
+                            <textarea id="profQuals" class="w-full h-20 bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-slate-100 resize-none" placeholder="e.g., LL.M, Chief Justice of Chamber..."></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">Experience</label>
+                            <textarea id="profExp" class="w-full h-24 bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-slate-100 resize-none" placeholder="Years of Service, past cases..."></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">Landmark Judgements</label>
+                            <textarea id="profCases" class="w-full h-24 bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-slate-100 resize-none" placeholder="Key cases decided..."></textarea>
+                        </div>
+                        <button onclick="saveProfile()" class="w-full bg-amber-600 hover:bg-amber-500 text-slate-900 font-bold p-2 rounded-lg text-sm transition-all flex items-center justify-center gap-1 shadow-md">
+                            <i data-lucide="save" class="w-4 h-4"></i> Save Profile
+                        </button>
+                    </div>
+                </div>
+
             </div>
             {% else %}
             <!-- PARTY VIEW: WAR ROOM -->
@@ -589,22 +613,45 @@
         }
 
         function switchJudgeTab(tab) {
-            const panelReview = document.getElementById('panelReview');
-            const panelStudio = document.getElementById('panelStudio');
-            const tabReview = document.getElementById('tabReview');
-            const tabStudio = document.getElementById('tabStudio');
+            const panels = ['Review', 'Studio', 'Profile'];
+            panels.forEach(p => {
+                const el = document.getElementById(`panel${p}`);
+                const btn = document.getElementById(`tab${p}`);
+                if (el && btn) {
+                     if (p.toLowerCase() === tab) {
+                          el.classList.remove('hidden');
+                          btn.className = "px-3 py-1 text-xs font-bold rounded bg-slate-800 border border-slate-700 text-amber-500";
+                     } else {
+                          el.classList.add('hidden');
+                          btn.className = "px-3 py-1 text-xs font-bold rounded bg-slate-900 border border-slate-800 text-slate-400";
+                     }
+                }
+            });
+            if (tab === 'profile') loadProfile();
+        }
 
-            if (tab === 'studio') {
-                panelReview.classList.add('hidden');
-                panelStudio.classList.remove('hidden');
-                tabStudio.className = "px-3 py-1 text-xs font-bold rounded bg-slate-800 border border-slate-700 text-amber-500";
-                tabReview.className = "px-3 py-1 text-xs font-bold rounded bg-slate-900 border border-slate-800 text-slate-400";
-            } else {
-                panelReview.classList.remove('hidden');
-                panelStudio.classList.add('hidden');
-                tabReview.className = "px-3 py-1 text-xs font-bold rounded bg-slate-800 border border-slate-700 text-amber-500";
-                tabStudio.className = "px-3 py-1 text-xs font-bold rounded bg-slate-900 border border-slate-800 text-slate-400";
+        async function loadProfile() {
+            const res = await fetch('/api/judge/profile');
+            const data = await res.json();
+            if (res.ok) {
+                document.getElementById('profQuals').value = data.qualifications || '';
+                document.getElementById('profExp').value = data.experience || '';
+                document.getElementById('profCases').value = data.landmark_judgements || '';
             }
+        }
+
+        async function saveProfile() {
+            const quals = document.getElementById('profQuals').value;
+            const exp = document.getElementById('profExp').value;
+            const cases = document.getElementById('profCases').value;
+            
+            const res = await fetch('/api/judge/profile', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ qualifications: quals, experience: exp, landmark_judgements: cases })
+            });
+            if (res.ok) alert("Profile saved successfully.");
+            else alert("Failed to save profile.");
         }
 
         async function submitArticle() {

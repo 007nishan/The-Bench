@@ -62,7 +62,28 @@ class Article(db.Model):
 
 class Notice(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(100), nullable=False, default='Notice')
     content = db.Column(db.Text, nullable=False)
+    importance = db.Column(db.String(20), default='standard') # standard, critical
     is_active = db.Column(db.Boolean, default=True)
     timestamp = db.Column(db.DateTime, default=db.func.current_timestamp())
     judge_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+class JudgeProfile(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), unique=True, nullable=False)
+    qualifications = db.Column(db.Text, nullable=True)
+    experience = db.Column(db.Text, nullable=True)
+    landmark_judgements = db.Column(db.Text, nullable=True)
+    
+    user = db.relationship('User', backref=db.backref('judge_profile', uselist=False))
+
+class Comment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    article_id = db.Column(db.Integer, db.ForeignKey('article.id'), nullable=True)
+    notice_id = db.Column(db.Integer, db.ForeignKey('notice.id'), nullable=True)
+    content = db.Column(db.Text, nullable=False)
+    timestamp = db.Column(db.DateTime, default=db.func.current_timestamp())
+
+    user = db.relationship('User', backref=db.backref('comments', lazy=True))

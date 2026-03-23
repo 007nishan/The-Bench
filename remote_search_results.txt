@@ -1,0 +1,37 @@
+
+Running: echo '--- Searching for Bot Token in telegram_bridge.py ---'
+--- Searching for Bot Token in telegram_bridge.py ---
+
+Running: cat /home/nishan/portfolio/telegram_bridge.py | grep -E 'token|TOKEN|chat|CHAT'
+TOKEN = "8571904781:AAEhaViQiEihWOHShd0a0ywJ0BMufSh13p8"
+                response = client.chat.completions.create(
+                await context.bot.edit_message_text(chat_id=update.effective_chat.id, message_id=status_msg.message_id, text=f"🐚 **Agent executing Shell...**\n`{cmd_to_run}`", parse_mode='Markdown')
+                await context.bot.edit_message_text(chat_id=update.effective_chat.id, message_id=status_msg.message_id, text="🤔 **Agent evaluating output...**")
+        await context.bot.edit_message_text(chat_id=update.effective_chat.id, message_id=status_msg.message_id, text=final_reply)
+        await context.bot.edit_message_text(chat_id=update.effective_chat.id, message_id=status_msg.message_id, text=f"❌ AI Error: {e}")
+    app = ApplicationBuilder().token(TOKEN).build()
+
+Running: echo '--- Searching for Bot Token in other py files ---'
+--- Searching for Bot Token in other py files ---
+
+Running: grep -rnw '/home/nishan/portfolio/' -e 'bot' -e 'token' -e 'API_KEY' --exclude-dir=venv 2>/dev/null | head -n 20
+/home/nishan/portfolio/home.html:148:                <button onclick="alert('A bot coming vesr soon, then we shall chat forever.')"
+/home/nishan/portfolio/book_generator.py:16:    token = secrets.token_urlsafe(16)
+/home/nishan/portfolio/book_generator.py:19:    filename = f"{token}.html"
+/home/nishan/portfolio/book_generator.py:43:    return f"https://allowing-together-accepts-apache.trycloudflare.com/read/{token}"
+/home/nishan/portfolio/bot_run.log:10101:    updates = await self.bot.get_updates(
+/home/nishan/portfolio/bot_run.log:10131:    updates = await self.bot.get_updates(
+/home/nishan/portfolio/app.py:410:@app.route("/read/<token>", methods=["GET"])
+/home/nishan/portfolio/app.py:411:def read_book(token):
+/home/nishan/portfolio/app.py:414:        # Secure the token and check filename
+/home/nishan/portfolio/app.py:415:        token = secure_filename(token)
+/home/nishan/portfolio/app.py:416:        return render_template(f"books/{token}.html")
+/home/nishan/portfolio/app.py:600:        requests.get(f"https://api.telegram.org/bot{bot_token}/sendMessage?chat_id={chat_id}&text={msg}", timeout=5)
+/home/nishan/portfolio/templates/home.html:175:                <button onclick="alert('A bot coming vesr soon, then we shall chat forever.')"
+/home/nishan/portfolio/setup_ai.py:5:# Since we don't have it yet, we'll wait for you to run /start on the bot.
+/home/nishan/portfolio/continuous_notes.py:31:    "https://www.freecodecamp.org/news/what-is-toon-how-token-oriented-object-notation-could-change-how-ai-sees-data/"
+/home/nishan/portfolio/.git/hooks/fsmonitor-watchman.sample:11:# The hook is passed a version (currently 2) and last update token
+/home/nishan/portfolio/.git/hooks/fsmonitor-watchman.sample:12:# formatted as a string and outputs to stdout a new update token and
+/home/nishan/portfolio/.git/hooks/fsmonitor-watchman.sample:13:# all files that have been modified since the update token. Paths must
+/home/nishan/portfolio/telegram_bridge.py:219:                await context.bot.edit_message_text(chat_id=update.effective_chat.id, message_id=status_msg.message_id, text=f"🐚 **Agent executing Shell...**\n`{cmd_to_run}`", parse_mode='Markdown')
+/home/nishan/portfolio/telegram_bridge.py:235:                await context.bot.edit_message_text(chat_id=update.effective_chat.id, message_id=status_msg.message_id, text="🤔 **Agent evaluating output...**")

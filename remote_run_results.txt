@@ -1,0 +1,50 @@
+--- Reading /home/nishan/monitor_tunnels.py ---
+import subprocess
+import time
+import requests
+import os
+
+TOKEN = "8571904781:AAEhaViQiEihWOHShd0a0ywJ0BMufSh13p8"
+CHAT_ID = "8687680759"
+
+# Clear debug log
+with open('/home/nishan/telegram_debug.log', 'w') as f: f.write("--- Start Telegram Debug --- 
+")
+
+def send_telegram(msg):
+    url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+    try:
+        r = requests.get(url, params={"chat_id": CHAT_ID, "text": msg}, timeout=10)
+        with open('/home/nishan/telegram_debug.log', 'a') as f:
+            f.write(f"Msg: {msg} \nResponse: {r.status_code} - {r.text} \n")
+    except Exception as e:
+        with open('/home/nishan/telegram_debug.log', 'a') as f:
+            f.write(f"Exception: {e} \n")
+
+def check_process(name, restart_cmd):
+    res = subprocess.run("ps aux | grep [" + name[0] + "]" + name[1:], shell=True, capture_output=True, text=True)
+    if name not in res.stdout:
+        subprocess.run(restart_cmd, shell=True)
+        return False
+    return True
+
+# 1. Check Flask App
+flask_restart = "cd /home/nishan/flask_replica && source venv/bin/activate && nohup python app.py > app.log 2>&1 &"
+check_process("app.py", flask_restart)
+
+# 2. Check Tunnel for Bench
+tunnel_restart = "nohup /home/nishan/cloudflared tunnel --url http://127.0.0.1:5000 > /home/nishan/tunnel.log 2>&1 &"
+check_process("cloudflared tunnel --url http://127.0.0.1:5000", tunnel_restart)
+
+send_telegram("🚀 **The Bench Direct Debug Trigger**")
+
+
+
+--- Testing execution and reading stderr ---
+STDOUT:
+
+STDERR:
+  File "/home/nishan/monitor_tunnels.py", line 10
+    with open('/home/nishan/telegram_debug.log', 'w') as f: f.write("--- Start Telegram Debug --- 
+                                                                    ^
+SyntaxError: unterminated string literal (detected at line 10)

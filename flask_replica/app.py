@@ -90,7 +90,13 @@ def file_public_case():
     )
     db.session.add(new_case)
     db.session.commit()
-    return jsonify({"status": "success", "message": "Case filed. Awaiting Admin Admission."})
+    return jsonify({
+        "status": "success", 
+        "message": "Case filed successfully!",
+        "receipt": f"CN-{new_case.id:04d}",
+        "case_id": new_case.id
+    })
+
 
 @app.route('/api/health', methods=['GET'])
 def health():
@@ -522,8 +528,88 @@ def get_public_content():
             "id": n.id, "title": n.title, "content": n.content,
             "importance": n.importance, "judge": j.username if j else "Anonymous"
         })
-
     return jsonify({"articles": arts, "notices": nots})
+
+# --- Judge Profile & Interaction Endpoints ---
+
+@app.route('/api/judge/profile', methods=['GET', 'POST'])
+@login_required
+def manage_judge_profile():
+    from models import JudgeProfile
+    if request.method == 'POST':
+        if current_user.role != 'judge':
+            return jsonify({"error": "Forbidden"}), 403
+        data = request.get_json()
+        
+        profile = JudgeProfile.query.filter_by(user_id=current_user.id).first()
+        if not profile:
+            profile = JudgeProfile(user_id=current_user.id)
+            db.session.add(profile)
+            
+        profile.qualifications = data.get('qualifications', profile.qualifications)
+        profile.experience = data.get('experience', profile.experience)
+        profile.landmark_judgements = data.get('landmark_judgements', profile.landmark_judgements)
+        db.session.commit()
+        return jsonify({"status": "success", "message": "Profile updated."})
+        
+    else: # GET
+        judge_id = request.args.get('judge_id', current_user.id)
+        user = User.query.get(judge_id)
+        if not user or user.role != 'judge':
+            return jsonify({"error": "Judge not found"}), 404
+            
+        profile = JudgeProfile.query.filter_by(user_id=judge_id).first()
+        
+        # Aggregators
+        ongoing = Case.query.filter_by(judge_id=judge_id).filter(Case.status == 'active').count()
+        disposed = Case.query.filter_by(judge_id=judge_id).filter(Case.status.in_(['decided', 'dismissed', 'rejected'])).count()
+        
+        return jsonify({
+            "username": user.username,
+            "qualifications": profile.qualifications if profile else "",
+            "experience": profile.experience if profile else "",
+            "landmark_judgements": profile.landmark_judgements if profile else "",
+            "ongoing_cases": ongoing,
+            "disposed_cases": disposed
+        })
+
+@app.route('/api/comment', methods=['POST'])
+@login_required
+def add_comment():
+    from models import Comment
+    data = request.get_json()
+    article_id = data.get('article_id')
+    notice_id = data.get('notice_id')
+    content = data.get('content')
+    
+    if not content:
+        return jsonify({"error": "Content required"}), 400
+        
+    com = Comment(
+        user_id=current_user.id,
+        article_id=article_id,
+        notice_id=notice_id,
+        content=content
+    )
+    db.session.add(com)
+    db.session.commit()
+    return jsonify({"status": "success", "message": "Comment posted."})
+
+@app.route('/api/public/comments', methods=['GET'])
+def get_comments():
+    from models import Comment
+    article_id = request.args.get('article_id')
+    notice_id = request.args.get('notice_id')
+    
+    query = Comment.query
+    if article_id: query = query.filter_by(article_id=article_id)
+    if notice_id: query = query.filter_by(notice_id=notice_id)
+    
+    comments = query.order_by(Comment.timestamp.desc()).all()
+    return jsonify([{
+        "id": c.id, "user": c.user.username, "content": c.content, "timestamp": str(c.timestamp)
+    } for c in comments])
+
 
 if __name__ == '__main__':
     with app.app_context():
