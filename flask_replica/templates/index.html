@@ -108,14 +108,17 @@
                 body: JSON.stringify({ name, contact, title, description: desc, case_type: type })
             });
 
-            const data = await res.json();
-
-            if(res.ok) {
-                closeFileModal();
-                openReceiptModal(data.receipt);
-                loadCases();
-            } else {
-                alert("Failed to file case.");
+            try {
+                const data = await res.json();
+                if(res.ok) {
+                    closeFileModal();
+                    openReceiptModal(data.receipt);
+                    loadCases();
+                } else {
+                    alert("Failed to file case: " + (data.error || "Unknown error"));
+                }
+            } catch (e) {
+                alert("Case submitted, but server feedback erred. Please reload and check status.");
             }
         }
 

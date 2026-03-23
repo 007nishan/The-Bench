@@ -467,13 +467,20 @@
                     } else {
                         unapproved.forEach(u => {
                             const div = document.createElement('div');
-                            div.className = "flex justify-between items-center bg-slate-900/50 p-2 rounded-lg border border-slate-700/30 text-xs";
+                            div.className = "flex justify-between items-center bg-slate-900/50 p-2 rounded-lg border border-slate-700/30 text-xs gap-2";
                             div.innerHTML = `
-                                <div>
+                                <div class="flex-1">
                                     <span class="font-semibold text-slate-200">${u.username}</span>
-                                    <span class="block text-[10px] text-slate-400 capitalize">${u.role}</span>
+                                    <div class="flex items-center gap-1 mt-0.5">
+                                        <select onchange="changeUserRole('${u.id}', this.value)" class="bg-slate-800 border border-slate-700 rounded px-1 py-0.5 text-[9px] text-slate-300">
+                                            <option value="user" ${u.role === 'user' ? 'selected' : ''}>User</option>
+                                            <option value="judge" ${u.role === 'judge' ? 'selected' : ''}>Judge</option>
+                                            <option value="accuser" ${u.role === 'accuser' ? 'selected' : ''}>Accuser</option>
+                                            <option value="accused" ${u.role === 'accused' ? 'selected' : ''}>Accused</option>
+                                        </select>
+                                    </div>
                                 </div>
-                                <button onclick="approveUser('${u.id}')" class="bg-green-600 hover:bg-green-500 text-white px-2 py-1 rounded text-[10px] font-bold">Approve</button>
+                                <button onclick="approveUser('${u.id}')" class="bg-green-600 hover:bg-green-500 text-white px-2 py-1 rounded text-[10px] font-bold h-fit">Approve</button>
                             `;
                             pendingContainer.appendChild(div);
                         });
@@ -495,9 +502,10 @@
                     const div = document.createElement('div');
                     div.className = "bg-slate-900/50 p-3 rounded-lg border border-slate-700/50 space-y-2";
                     
-                    const judges = approvedUsers.filter(u => u.role === 'judge');
-                    const accusers = approvedUsers.filter(u => u.role === 'accuser');
-                    const accuseds = approvedUsers.filter(u => u.role === 'accused');
+                    const judges = approvedUsers.filter(u => u.role === 'judge' || u.role === 'user');
+                    const accusers = approvedUsers;
+                    const accuseds = approvedUsers;
+                    const parties = approvedUsers;
 
                     let filerInfo = '';
                     let isPublic = false;
@@ -551,6 +559,20 @@
             });
             if (res.ok) {
                 loadAdminCases();
+            }
+        }
+
+        async function changeUserRole(userId, role) {
+            const res = await fetch('/api/admin/change_role', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ user_id: userId, role: role })
+            });
+            if (res.ok) {
+                alert("Role updated.");
+                loadAdminCases();
+            } else {
+                alert("Failed to update role.");
             }
         }
 

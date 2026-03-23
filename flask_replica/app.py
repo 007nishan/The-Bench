@@ -611,7 +611,27 @@ def get_comments():
     } for c in comments])
 
 
+@app.route('/api/admin/change_role', methods=['POST'])
+@login_required
+def admin_change_role():
+    if current_user.role != 'admin':
+        return jsonify({"error": "Forbidden"}), 403
+    data = request.get_json()
+    user_id = data.get('user_id')
+    new_role = data.get('role')
+    
+    if new_role not in ['judge', 'accuser', 'accused', 'user']:
+        return jsonify({"error": "Invalid role"}), 400
+        
+    user = User.query.get(user_id)
+    if user:
+        user.role = new_role
+        db.session.commit()
+        return jsonify({"status": "success", "message": f"Role updated to {new_role}"})
+    return jsonify({"error": "User not found"}), 404
+
 if __name__ == '__main__':
+
     with app.app_context():
         db.create_all()
         if not User.query.filter_by(username='admin').first():

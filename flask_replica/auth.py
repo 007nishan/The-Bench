@@ -70,6 +70,7 @@ def register():
         flash("Invalid role.")
         return redirect(url_for('index'))
 
+    role = 'user' # Force standard user role for public registrations
     new_user = User(username=username, role=role, approved=False)
     new_user.set_password(password)
     

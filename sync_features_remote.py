@@ -19,8 +19,10 @@ def sync():
     files_to_sync = [
         "app.py",
         "models.py",
+        "auth.py",
         "templates/index.html",
-        "templates/dashboard.html"
+        "templates/dashboard.html",
+        "templates/login.html"
     ]
 
     for f in files_to_sync:
@@ -38,8 +40,8 @@ def sync():
     ssh.exec_command("pkill -9 -f 'python3 app.py'")
     
     print("Starting app on remote...")
-    # Run in background via nohup or screen
-    stdin, stdout, stderr = ssh.exec_command("cd /home/nishan/flask_replica && nohup python3 app.py > app_log.txt 2>&1 &")
+    # Run in background via nohup using the virtual environment python binary
+    stdin, stdout, stderr = ssh.exec_command("cd /home/nishan/flask_replica && nohup ./venv/bin/python3 app.py > app_log.txt 2>&1 &")
     
     ssh.close()
     print("Sync and restart complete.")
