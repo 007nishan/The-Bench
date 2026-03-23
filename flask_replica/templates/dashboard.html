@@ -138,6 +138,8 @@
                         <div class="flex justify-between items-center bg-slate-800/50 pt-1 border-t border-slate-700/50">
                             <div class="flex-1"></div>
                             <div class="flex gap-2">
+                                <button onclick="admitCase('active')" class="bg-green-600 hover:bg-green-500 text-white px-2 py-1.5 rounded text-xs font-bold shadow-sm">Admit Application</button>
+                                <button onclick="admitCase('rejected')" class="bg-red-600 hover:bg-red-500 text-white px-2 py-1.5 rounded text-xs font-bold shadow-sm">Reject Application</button>
                                 <button onclick="judgeIntervene()" class="bg-amber-600 hover:bg-amber-500 text-slate-900 px-3 py-1.5 rounded text-xs font-bold flex items-center gap-1 shadow"><i data-lucide="zap" class="w-3 h-3"></i> Intervene</button>
                                 <button onclick="openDecisionModal()" class="bg-red-600 hover:bg-red-500 text-white px-3 py-1.5 rounded text-xs">Resolve Case</button>
                             </div>
@@ -300,7 +302,7 @@
         setInterval(() => {
             if (activeCaseId) {
                 loadTimeline();
-                if (role === 'judge' || role === 'accuser' || role === 'accused') {
+                if (role !== 'admin') {
                     loadSubmissions();
                 }
             }
@@ -387,7 +389,8 @@
                 if(!container) return;
                 container.innerHTML = '';
 
-                const filteredSubs = role === 'judge' ? subs : subs.filter(s => s.sender === role || s.status === 'admitted');
+                // Backend handles access clearance securely.
+                const filteredSubs = subs;
 
                 const counter = document.getElementById('pendingCount');
                 if(counter) {
@@ -614,9 +617,25 @@
                  alert("Verdict published. Case Resolved.");
                  closeDecisionModal();
                  document.getElementById('judgeText').value = '';
-                 // Optional reload or update UI status label
+                 loadCases();
              } else { alert("Failed to resolve case."); }
         }
+        
+        async function admitCase(action) {
+             if (!activeCaseId) return alert("Select a case first.");
+             const res = await fetch('/api/judge/admit_case', {
+                  method: 'POST',
+                  headers: {'Content-Type': 'application/json'},
+                  body: JSON.stringify({ case_id: activeCaseId, action: action })
+             });
+             if(res.ok) {
+                  alert("Application manually " + (action === 'active' ? 'Admitted to active trial.' : 'Rejected/Dismissed.'));
+                  loadCases(); // Reload to refresh dropdown status
+             } else {
+                  alert("Failed to change case admission status. It may already be decided.");
+             }
+        }
+
         async function judgeIntervene() {
              if (!activeCaseId) return alert("Select a case first.");
              const text = document.getElementById('judgeText').value;

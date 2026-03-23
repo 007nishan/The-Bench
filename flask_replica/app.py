@@ -145,7 +145,15 @@ def submit_argument():
         if not case_id or not text:
             return jsonify({"error": "Missing case_id or argument text"}), 400
             
-        sub = Submission(case_id=case_id, sender_role=current_user.role, content=text)
+        case_ref = Case.query.get(case_id)
+        sender_role = current_user.role
+        if current_user.role == 'user':
+            if case_ref and case_ref.accuser_id == current_user.id:
+                sender_role = 'accuser'
+            elif case_ref and case_ref.accused_id == current_user.id:
+                sender_role = 'accused'
+            
+        sub = Submission(case_id=case_id, sender_role=sender_role, content=text)
         db.session.add(sub)
         db.session.commit()
         return jsonify({
@@ -168,6 +176,17 @@ def get_pending():
         
         res = []
         for s in subs:
+            if current_user.role == 'user':
+                c_ref = Case.query.get(s.case_id)
+                is_mine = False
+                if c_ref:
+                    if s.sender_role == 'accuser' and c_ref.accuser_id == current_user.id:
+                        is_mine = True
+                    elif s.sender_role == 'accused' and c_ref.accused_id == current_user.id:
+                        is_mine = True
+                if s.status != 'admitted' and not is_mine:
+                    continue
+
             res.append({
                 "id": s.id,
                 "sender": s.sender_role,
@@ -363,11 +382,24 @@ def admin_allocate_case():
     if accuser_id: c.accuser_id = accuser_id
     if accused_id: c.accused_id = accused_id
 
-    if c.status == 'pending_admission' and judge_id:
-        c.status = 'active'
-    
     db.session.commit()
-    return jsonify({"status": "success", "message": "Case allocated and admitted."})
+    return jsonify({"status": "success", "message": "Case allocated. Pending judicial review."})
+
+@app.route('/api/judge/admit_case', methods=['POST'])
+@login_required
+def admit_case():
+    if current_user.role != 'judge':
+        return jsonify({"error": "Forbidden"}), 403
+    data = request.get_json()
+    case_id = data.get('case_id')
+    action = data.get('action') # 'active' or 'rejected'
+    
+    c = Case.query.get(case_id)
+    if c and c.judge_id == current_user.id:
+        c.status = action
+        db.session.commit()
+        return jsonify({"status": "success", "message": f"Case updated to {action} successfully."})
+    return jsonify({"error": "Invalid authority or case."}), 400
 
 @app.route('/api/cases', methods=['GET'])
 @login_required
@@ -376,10 +408,8 @@ def get_user_cases():
         cases = Case.query.all()
     elif current_user.role == 'judge':
         cases = Case.query.filter_by(judge_id=current_user.id).all()
-    elif current_user.role == 'accuser':
-        cases = Case.query.filter_by(accuser_id=current_user.id).all()
     else:
-        cases = Case.query.filter_by(accused_id=current_user.id).all()
+        cases = Case.query.filter((Case.accuser_id == current_user.id) | (Case.accused_id == current_user.id)).all()
         
     res = []
     for c in cases:
