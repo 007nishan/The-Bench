@@ -12,7 +12,8 @@ def initialize_database():
         admin = User.query.filter_by(username='admin').first()
         if not admin:
             print("Seeding Admin user (admin/admin123)...")
-            admin = User(username='admin', role='admin')
+            # Create default admin
+            admin = User(username='admin', role='admin', approved=True)
             admin.set_password('admin123')
             db.session.add(admin)
             

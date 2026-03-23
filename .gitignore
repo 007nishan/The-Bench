@@ -33,6 +33,13 @@ build/
 backend/chroma_db/
 backend/vector_store.json
 backend/case_record.json
+*.db
+instance/
+
+# Binaries
+cloudflared*
+deploy_*.zip
+flask_*.zip
 
 # OS
 .DS_Store

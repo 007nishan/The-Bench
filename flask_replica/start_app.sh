@@ -9,12 +9,15 @@ if [ ! -d "venv" ]; then
 fi
 
 # Activate venv
+pkill -f "app.py" || true
+echo "Killing existing app.py process to free port 5000..."
+
 source venv/bin/activate
 
 # Install dependencies
 echo "Installing dependencies inside venv..."
-pip3 install flask flask-cors pytz requests python-dotenv google-generativeai
+./venv/bin/pip install -r requirements.txt > pip_output.log 2>&1
 
 # Run in background
-nohup python3 app.py > app_output.log 2>&1 &
+nohup ./venv/bin/python3 app.py > app_output.log 2>&1 &
 echo "App started in background with Venv."

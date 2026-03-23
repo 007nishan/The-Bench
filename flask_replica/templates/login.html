@@ -26,11 +26,16 @@
             <p class="text-slate-400 text-sm uppercase tracking-[0.2em]">Three Perspectives. One Truth.</p>
         </div>
 
-        <form action="/login_submit" method="POST" class="mt-8 max-w-sm mx-auto bg-slate-800/80 border border-slate-700/50 p-8 rounded-2xl space-y-5 shadow-2xl backdrop-blur-md">
-            <!-- Flash message display -->
+        <!-- Auth Tabs -->
+        <div class="max-w-sm mx-auto flex gap-2 mb-4 bg-slate-800/80 p-1 rounded-lg border border-slate-700/50 backdrop-blur-md">
+            <button id="loginTab" onclick="switchTab('login')" class="flex-1 py-1.5 text-xs font-semibold rounded-md bg-blue-600 text-white transition-all duration-200">Login</button>
+            <button id="signupTab" onclick="switchTab('signup')" class="flex-1 py-1.5 text-xs font-semibold rounded-md text-slate-400 hover:text-slate-200 transition-all duration-200">Register</button>
+        </div>
+
+        <form id="authForm" action="/login_submit" method="POST" class="max-w-sm mx-auto bg-slate-800/80 border border-slate-700/50 p-8 rounded-2xl space-y-5 shadow-2xl backdrop-blur-md">
             {% with messages = get_flashed_messages() %}
               {% if messages %}
-                <div class="bg-red-500/20 border border-red-500 text-red-200 text-xs p-3 rounded-lg">
+                <div id="flashMessage" class="bg-red-500/20 border border-red-500 text-red-200 text-xs p-3 rounded-lg">
                   {{ messages[0] }}
                 </div>
               {% endif %}
@@ -44,32 +49,44 @@
                 <label class="block text-sm font-medium text-slate-400 mb-1">Password</label>
                 <input type="password" name="password" required class="block w-full bg-slate-900/80 border border-slate-700/50 rounded-lg p-2.5 text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none">
             </div>
-            <button type="submit" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold p-2.5 rounded-lg transition-all shadow-lg hover:shadow-blue-500/20">
+
+            <div id="roleSelector" class="hidden">
+                <label class="block text-sm font-medium text-slate-400 mb-1">Register As</label>
+                <select name="role" class="block w-full bg-slate-900/80 border border-slate-700/50 rounded-lg p-2.5 text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none">
+                    <option value="judge">Judge</option>
+                    <option value="accuser">Accuser</option>
+                    <option value="accused">Accused</option>
+                </select>
+            </div>
+
+            <button type="submit" id="submitBtn" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold p-2.5 rounded-lg transition-all shadow-lg hover:shadow-blue-500/20">
                 Authenticate
             </button>
         </form>
 
-        <!-- Use Instructions Notice -->
-        <div class="mt-8 max-w-md mx-auto bg-slate-800/40 border border-slate-700/30 p-6 rounded-xl text-left text-sm text-slate-400 space-y-3 backdrop-blur-sm">
-            <h3 class="font-semibold text-slate-200 flex items-center gap-2">
-                <i data-lucide="info" class="w-4 h-4 text-blue-400"></i>
-                How to Use This Website
-            </h3>
-            <p class="text-xs text-slate-400">Welcome to **The Bench**, a multi-perspective strategy board.</p>
-            <ul class="list-disc list-inside space-y-1.5 text-xs text-slate-400">
-                <li><strong class="text-amber-400">Admin</strong>: Login with <code class="bg-slate-900/80 px-1 py-0.5 rounded border border-slate-700">admin</code> / <code class="bg-slate-900/80 px-1 py-0.5 rounded border border-slate-700">admin123</code> to allocate filed cases.</li>
-                <li><strong class="text-blue-400">Parties</strong>: Use credentials provided by the admin node once registered.</li>
-                <li><strong class="text-slate-200">Public Wall</strong>: Live continuous grid timeline available through discrete address hooks.</li>
-            </ul>
-        </div>
-    </div>
-
     <script>
-        // Initialize Lucide Icons
-        lucide.createIcons();
+        function switchTab(mode) {
+            const form = document.getElementById('authForm');
+            const roleSel = document.getElementById('roleSelector');
+            const submitBtn = document.getElementById('submitBtn');
+            const loginTab = document.getElementById('loginTab');
+            const signupTab = document.getElementById('signupTab');
+            const flash = document.getElementById('flashMessage');
+            if(flash) flash.classList.add('hidden');
 
-        function handleLogin(role) {
-            window.location.href = '/' + role;
+            if (mode === 'signup') {
+                form.action = "/register";
+                roleSel.classList.remove('hidden');
+                submitBtn.innerText = "Register Account";
+                signupTab.className = "flex-1 py-1.5 text-xs font-semibold rounded-md bg-blue-600 text-white transition-all";
+                loginTab.className = "flex-1 py-1.5 text-xs font-semibold rounded-md text-slate-400 hover:text-slate-200 transition-all";
+            } else {
+                form.action = "/login_submit";
+                roleSel.classList.add('hidden');
+                submitBtn.innerText = "Authenticate";
+                loginTab.className = "flex-1 py-1.5 text-xs font-semibold rounded-md bg-blue-600 text-white transition-all";
+                signupTab.className = "flex-1 py-1.5 text-xs font-semibold rounded-md text-slate-400 hover:text-slate-200 transition-all";
+            }
         }
     </script>
 </body>

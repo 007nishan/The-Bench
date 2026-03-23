@@ -54,6 +54,7 @@ def deploy():
         f"unzip -o {remote_zip} -d {remote_dest}",
         f"sed -i 's/\\r$//' {remote_dest}/start_app.sh", # Fix CRLF line endings
         f"chmod +x {remote_dest}/start_app.sh",
+        f"cd {remote_dest} && rm -f the_bench.db && rm -rf instance && mkdir -p instance && python3 init_db.py",
         f"bash {remote_dest}/start_app.sh",
         "chmod +x /home/nishan/cloudflared",
         # Start tunnel in background

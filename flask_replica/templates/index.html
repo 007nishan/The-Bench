@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><title>The Bench - Public Wall</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>body { font-family: 'Inter', sans-serif; background-color: #0f172a; }</style>
+</head>
+<body class="text-slate-100 flex flex-col h-screen overflow-hidden">
+    <!-- Top Nav -->
+    <header class="h-14 border-b border-slate-800 flex items-center justify-between px-6 bg-slate-900/80 backdrop-blur-md z-10">
+        <h1 class="text-xl font-bold flex items-center gap-2 cursor-pointer" onclick="window.location.href='/'">
+            <i data-lucide="scale" class="text-blue-400 w-5 h-5"></i>
+            <span>The Bench</span>
+        </h1>
+        <div class="flex items-center gap-2">
+            <button onclick="openFileModal()" class="bg-amber-600 hover:bg-amber-500 px-3 tracking-wide py-1.5 rounded-lg text-xs font-bold text-slate-100 flex items-center gap-1 shadow-md mr-1"><i data-lucide="gavel" class="w-3.5 h-3.5"></i> File Case / PIL</button>
+            <button onclick="window.location.href='/login'" class="bg-blue-600 hover:bg-blue-500 px-4 py-1.5 rounded-lg text-xs font-semibold">Login / Register</button>
+        </div>
+    </header>
+
+    <div class="flex-1 flex overflow-hidden">
+        <!-- Sidebar: Cases -->
+        <aside class="w-64 border-r border-slate-800 p-4 flex flex-col gap-3 bg-slate-900/30">
+            <h3 class="font-semibold text-xs text-slate-400 uppercase tracking-wider">Ongoing Cases</h3>
+            <div id="caseList" class="flex-1 overflow-y-auto space-y-2"></div>
+        </aside>
+
+        <!-- Center: Timeline -->
+        <main class="flex-1 flex flex-col p-6 overflow-hidden">
+            <div class="flex items-center justify-between mb-4">
+                <h2 id="activeCaseTitle" class="text-xl font-bold text-slate-200">Select a Case</h2>
+                <span class="text-xs bg-slate-800 px-2 py-1 rounded border border-slate-700 text-green-400">Public Record</span>
+            </div>
+            <div id="courtLog" class="flex-1 overflow-y-auto space-y-3 pr-2">
+                <div class="text-center text-slate-500 py-10 italic">Select a case from the sidebar to view arguments.</div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        lucide.createIcons();
+        let activeCaseId = null;
+
+        async function loadCases() {
+            const res = await fetch('/api/public/cases');
+            const cases = await res.json();
+            const container = document.getElementById('caseList');
+            container.innerHTML = '';
+            
+            cases.forEach(c => {
+                const button = document.createElement('button');
+                button.className = "w-full text-left p-3 bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 rounded-lg text-sm font-medium transition-colors mb-2 block";
+                button.innerHTML = `<div>${c.title}</div><span class="text-[10px] text-slate-400 capitalize">${c.status}</span>`;
+                button.onclick = () => {
+                    activeCaseId = c.id;
+                    document.getElementById('activeCaseTitle').innerText = c.title;
+                    loadTimeline();
+                };
+                container.appendChild(button);
+            });
+        }
+
+        async function loadTimeline() {
+            if (!activeCaseId) return;
+            const res = await fetch(`/api/public/court_log?case_id=${activeCaseId}`);
+            const log = await res.json();
+            const container = document.getElementById('courtLog');
+            container.innerHTML = '';
+
+            if (log.length === 0) {
+                container.innerHTML = '<div class="text-center text-slate-500 py-10 italic">No public arguments on record yet.</div>';
+                return;
+            }
+
+            log.forEach(item => {
+                const div = document.createElement('div');
+                div.className = "p-3 bg-slate-800 rounded border border-slate-700 space-y-1";
+                div.innerHTML = `
+                    <div class="flex justify-between text-xs text-slate-400 mb-1">
+                        <span class="font-bold uppercase text-amber-500">${item.actor}</span>
+                        <span>${item.timestamp}</span>
+                    </div>
+                    <p class="text-sm text-slate-200 font-serif">"${item.details}"</p>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function openFileModal() {
+            document.getElementById('fileModal').classList.remove('hidden');
+        }
+        function closeFileModal() {
+            document.getElementById('fileModal').classList.add('hidden');
+        }
+        async function submitPublicCase() {
+            const name = document.getElementById('filerName').value;
+            const contact = document.getElementById('filerContact').value;
+            const title = document.getElementById('fileCaseTitle').value;
+            const desc = document.getElementById('fileCaseDesc').value;
+            const type = document.getElementById('fileCaseType').value;
+
+            if(!name.trim() || !title.trim()) return alert("Name and Title are required.");
+
+            const res = await fetch('/api/public/file_case', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ name, contact, title, description: desc, case_type: type })
+            });
+
+            if(res.ok) {
+                alert("Case filed successfully! Awaiting Admin Admission.");
+                closeFileModal();
+                loadCases();
+            } else {
+                alert("Failed to file case.");
+            }
+        }
+
+        async function loadLandingContent() {
+             const res = await fetch('/api/public/content');
+             const data = await res.json();
+             const container = document.getElementById('courtLog');
+             container.innerHTML = '';
+
+             const noticeDiv = document.createElement('div');
+             noticeDiv.className = "bg-slate-900 border border-slate-700/50 rounded-lg p-2.5 text-xs flex items-center gap-2 overflow-hidden text-amber-500 shadow-md mb-4 max-w-full font-semibold";
+             noticeDiv.innerHTML = `<i data-lucide="megaphone" class="w-4 h-4 flex-shrink-0 text-slate-500"></i> <span>No critical announcements.</span>`;
+             if (data.notices && data.notices.length > 0) {
+                 const text = data.notices.map(n => `[${n.importance.toUpperCase()}] ${n.title}: ${n.content}`).join(' | ');
+                 noticeDiv.innerHTML = `<i data-lucide="megaphone" class="w-4 h-4 text-amber-400 flex-shrink-0 animate-pulse"></i> <marquee scrollamount="4" class="flex-1 text-amber-500">${text}</marquee>`;
+             }
+             container.appendChild(noticeDiv);
+
+             const header = document.createElement('h3');
+             header.className = "font-bold text-slate-400 text-xs uppercase tracking-wider mb-2 flex items-center gap-1 border-b border-slate-800 pb-1";
+             header.innerHTML = `<i data-lucide="scroll" class="w-3.5 h-3.5 text-blue-400"></i> Judge Insights & Opinions`;
+             container.appendChild(header);
+
+             const grid = document.createElement('div');
+             grid.className = "grid grid-cols-2 gap-3";
+             
+             if (!data.articles || data.articles.length === 0) {
+                 grid.innerHTML = `<div class="col-span-2 text-slate-500 text-center py-10 italic text-xs">No insights published yet.</div>`;
+             } else {
+                 data.articles.forEach(a => {
+                     const card = document.createElement('div');
+                     card.className = "bg-slate-800/50 p-3 rounded-xl border border-slate-700/40 space-y-2 flex flex-col justify-between hover:bg-slate-800/80 transition-all cursor-pointer";
+                     let imgHtml = a.image_url ? `<img src="${a.image_url}" class="w-full h-24 object-cover rounded-lg mb-1" onerror="this.remove()">` : '';
+                     card.innerHTML = `
+                         <div>
+                             ${imgHtml}
+                             <h4 class="font-bold text-slate-200 text-xs">${a.title}</h4>
+                             <p class="text-[10px] text-slate-400 line-clamp-3 mt-1 font-serif leading-relaxed">${a.content}</p>
+                         </div>
+                         <div class="text-[9px] text-blue-400 flex items-center gap-1 mt-2 border-t border-slate-700/40 pt-1 font-semibold">
+                             <i data-lucide="user" class="w-2.5 h-2.5"></i> Judge ${a.judge}
+                         </div>
+                     `;
+                     grid.appendChild(card);
+                 });
+             }
+             container.appendChild(grid);
+             lucide.createIcons();
+        }
+
+        loadCases();
+        loadLandingContent();
+        setInterval(() => {
+            if (activeCaseId) loadTimeline();
+        }, 5000);
+    </script>
+
+    <!-- Modal for filing case -->
+    <div id="fileModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 w-96 space-y-3 shadow-2xl">
+            <h3 class="font-bold text-slate-100 flex items-center gap-2">
+                <i data-lucide="gavel" class="text-amber-500"></i> File Public Case / PIL
+            </h3>
+            <div class="space-y-2">
+                <div>
+                    <label class="block text-xs text-slate-400 mb-0.5">Your Name *</label>
+                    <input type="text" id="filerName" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-slate-100" placeholder="Identity required">
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-0.5">Contact Info (Mail/Phone)</label>
+                    <input type="text" id="filerContact" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-slate-100">
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-0.5">Case Title *</label>
+                    <input type="text" id="fileCaseTitle" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-slate-100">
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-0.5">Description</label>
+                    <textarea id="fileCaseDesc" class="w-full h-20 bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-slate-100 resize-none"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-0.5">Type</label>
+                    <select id="fileCaseType" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-slate-100">
+                        <option value="standard">Standard Case</option>
+                        <option value="pil">Public Interest Litigation (PIL)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 pt-1 border-t border-slate-700">
+                <button onclick="closeFileModal()" class="px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded-lg text-xs font-semibold">Cancel</button>
+                <button onclick="submitPublicCase()" class="px-3 py-1 bg-amber-600 hover:bg-amber-500 rounded-lg text-xs font-semibold text-slate-900">Submit</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+

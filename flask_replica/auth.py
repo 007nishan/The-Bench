@@ -17,6 +17,12 @@ def login_submit():
 
     user = User.query.filter_by(username=username).first()
     if user and user.check_password(password):
+        if not user.approved:
+            if request.is_json:
+                return jsonify({"error": "Account awaiting Admin Approval"}), 403
+            flash("Account awaiting Admin Approval")
+            return redirect(url_for('index'))
+            
         login_user(user)
         if request.is_json:
             return jsonify({"status": "success", "role": user.role})
@@ -36,3 +42,41 @@ def get_current_user():
             "role": current_user.role
         })
     return jsonify({"is_authenticated": False})
+
+@auth_bp.route('/register', methods=['POST'])
+def register():
+    if request.is_json:
+        data = request.get_json()
+        username = data.get('username')
+        password = data.get('password')
+        role = data.get('role')
+    else:
+        username = request.form.get('username')
+        password = request.form.get('password')
+        role = request.form.get('role')
+
+    if not username or not password or not role:
+        if request.is_json: return jsonify({"error": "Missing fields"}), 400
+        flash("All fields are required.")
+        return redirect(url_for('index'))
+
+    if User.query.filter_by(username=username).first():
+        if request.is_json: return jsonify({"error": "Username taken"}), 400
+        flash("Username already exists.")
+        return redirect(url_for('index'))
+
+    if role not in ['judge', 'accuser', 'accused']:
+        if request.is_json: return jsonify({"error": "Invalid role"}), 400
+        flash("Invalid role.")
+        return redirect(url_for('index'))
+
+    new_user = User(username=username, role=role, approved=False)
+    new_user.set_password(password)
+    
+    db.session.add(new_user)
+    db.session.commit()
+
+    if request.is_json:
+        return jsonify({"status": "success", "message": "Registered! Awaiting Admin Approval."})
+    flash("Registered! Awaiting Admin Approval.")
+    return redirect(url_for('index'))

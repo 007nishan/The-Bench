@@ -34,9 +34,11 @@ class DocumentIngest(BaseModel):
     doc_id: str
     content: str
 
-@app.get("/")
-def read_root():
-    return {"status": "online", "message": "The Bench System (RAG + Agents) is Active"}
+# Commented out to allow React app to be served at /
+# Use /api/health instead for API health checks
+# @app.get("/")
+# def read_root():
+#     return {"status": "online", "message": "The Bench System (RAG + Agents) is Active"}
 
 @app.post("/ingest_document")
 def ingest_document(ingest: DocumentIngest):
@@ -158,3 +160,34 @@ def verify_submission(req: VerifyRequest):
     updated = case_manager.update_submission_status(req.submission_id, status, ai_notes=ai_output)
     
     return {"status": "success", "verdict": status, "details": updated}
+
+# --- Serve Frontend (Must be last) ---
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+
+# Ensure the path exists before mounting, for safety during dev vs prod
+frontend_dist = os.path.join(os.path.dirname(__file__), "../frontend/dist")
+if os.path.exists(frontend_dist):
+    app.mount("/assets", StaticFiles(directory=os.path.join(frontend_dist, "assets")), name="assets")
+    
+    @app.get("/")
+    async def serve_root():
+        index_path = os.path.join(frontend_dist, "index.html")
+        if os.path.exists(index_path):
+            return FileResponse(index_path)
+        return {"error": "Frontend not built or index.html missing"}
+
+    @app.get("/{full_path:path}")
+    async def serve_react_app(full_path: str):
+        # API routes are caught above. If we get here, serve index.html
+        # Check if file exists in dist (e.g. favicon.ico)
+        file_path = os.path.join(frontend_dist, full_path)
+        if os.path.isfile(file_path):
+             return FileResponse(file_path)
+        
+        # Fallback to index.html for client-side routing
+        index_path = os.path.join(frontend_dist, "index.html")
+        if os.path.exists(index_path):
+            return FileResponse(index_path)
+        return {"error": "Frontend not found"}
+

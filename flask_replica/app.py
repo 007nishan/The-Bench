@@ -11,7 +11,7 @@ load_dotenv()
 
 import rag_engine
 import case_manager
-from models import db, User, Case, Submission, Inquiry
+from models import db, User, Case, Submission, Inquiry, Article, Notice
 from auth import auth_bp
 from flask_login import LoginManager, login_required, current_user
 
@@ -37,22 +37,60 @@ app.register_blueprint(auth_bp)
 
 @app.route('/')
 def index():
-    """Render the Login page."""
+    return render_template('index.html')
+
+@app.route('/login')
+def login_page():
     return render_template('login.html')
 
-@app.route('/<role>')
+@app.route('/dashboard/<role>')
 @login_required
 def dashboard(role):
-    """Render the Dashboard for a specific role."""
-    # Allow admins to view any dashboard, otherwise match role
     if current_user.role != 'admin' and current_user.role != role:
         return redirect(url_for('dashboard', role=current_user.role))
-        
     if role not in ['accuser', 'accused', 'judge', 'admin']:
         return redirect(url_for('index'))
     return render_template('dashboard.html', role=role, user=current_user)
 
 # --- API Endpoints ---
+
+@app.route('/api/public/cases', methods=['GET'])
+def get_public_cases():
+    cases = Case.query.all()
+    return jsonify([{"id": c.id, "title": c.title, "status": c.status} for c in cases])
+
+@app.route('/api/public/court_log', methods=['GET'])
+def get_public_court_log():
+    case_id = request.args.get('case_id')
+    if not case_id: return jsonify([])
+    subs = Submission.query.filter_by(case_id=case_id, status='admitted').order_by(Submission.timestamp.asc()).all()
+    return jsonify([{
+        "id": s.id, "actor": s.sender, "details": s.argument, "timestamp": str(s.timestamp)
+    } for s in subs])
+
+@app.route('/api/public/file_case', methods=['POST'])
+def file_public_case():
+    data = request.get_json()
+    title = data.get('title')
+    description = data.get('description')
+    name = data.get('name')
+    contact = data.get('contact')
+    case_type = data.get('case_type', 'standard')
+
+    if not title or not name:
+        return jsonify({"error": "Title and Filer Name are required"}), 400
+
+    new_case = Case(
+        title=title,
+        description=description,
+        status='pending_admission',
+        case_type=case_type,
+        public_filer_name=name,
+        public_filer_contact=contact
+    )
+    db.session.add(new_case)
+    db.session.commit()
+    return jsonify({"status": "success", "message": "Case filed. Awaiting Admin Admission."})
 
 @app.route('/api/health', methods=['GET'])
 def health():
@@ -269,7 +307,23 @@ def admin_get_users():
     if current_user.role != 'admin':
         return jsonify({"error": "Forbidden"}), 403
     users = User.query.filter(User.role != 'admin').all()
-    return jsonify([{"id": u.id, "username": u.username, "role": u.role} for u in users])
+    return jsonify([{"id": u.id, "username": u.username, "role": u.role, "approved": u.approved} for u in users])
+
+@app.route('/api/admin/approve_user', methods=['POST'])
+@login_required
+def admin_approve_user():
+    if current_user.role != 'admin':
+        return jsonify({"error": "Forbidden"}), 403
+    data = request.get_json()
+    user_id = data.get('user_id')
+    
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+        
+    user.approved = True
+    db.session.commit()
+    return jsonify({"status": "success", "message": f"User approved."})
 
 @app.route('/api/admin/create_case', methods=['POST'])
 @login_required
@@ -304,15 +358,17 @@ def admin_allocate_case():
     if judge_id: c.judge_id = judge_id
     if accuser_id: c.accuser_id = accuser_id
     if accused_id: c.accused_id = accused_id
+
+    if c.status == 'pending_admission' and judge_id:
+        c.status = 'active'
     
     db.session.commit()
-    return jsonify({"status": "success", "message": "Case allocated successfully."})
+    return jsonify({"status": "success", "message": "Case allocated and admitted."})
 
 @app.route('/api/cases', methods=['GET'])
 @login_required
 def get_user_cases():
     if current_user.role == 'admin':
-        # Admin can see all, but endpoint usually for regular dashboards
         cases = Case.query.all()
     elif current_user.role == 'judge':
         cases = Case.query.filter_by(judge_id=current_user.id).all()
@@ -321,7 +377,161 @@ def get_user_cases():
     else:
         cases = Case.query.filter_by(accused_id=current_user.id).all()
         
-    return jsonify([{"id": c.id, "title": c.title, "status": c.status} for c in cases])
+    res = []
+    for c in cases:
+        j = User.query.get(c.judge_id) if c.judge_id else None
+        acc = User.query.get(c.accuser_id) if c.accuser_id else None
+        acd = User.query.get(c.accused_id) if c.accused_id else None
+        res.append({
+            "id": c.id,
+            "title": c.title,
+            "status": c.status,
+            "case_type": c.case_type,
+            "public_filer_name": c.public_filer_name,
+            "public_filer_contact": c.public_filer_contact,
+            "judge": j.username if j else "Unassigned",
+            "accuser": acc.username if acc else "Unassigned",
+            "accused": acd.username if acd else "Unassigned"
+        })
+    return jsonify(res)
+
+@app.route('/api/judge/close_case', methods=['POST'])
+@login_required
+def judge_close_case():
+    if current_user.role != 'judge':
+        return jsonify({"error": "Forbidden"}), 403
+    data = request.get_json()
+    case_id = data.get('case_id')
+    result = data.get('result')  # decided, dismissed, rejected
+    reason = data.get('reason')
+
+    if not case_id or not result or not reason:
+        return jsonify({"error": "Missing parameters"}), 400
+
+    c = Case.query.get(case_id)
+    if not c:
+        return jsonify({"error": "Case not found"}), 404
+
+    if c.judge_id != current_user.id:
+        return jsonify({"error": "Forbidden: Not assigned to this case"}), 403
+
+    c.status = result
+
+    msg = Submission(
+        case_id=case_id,
+        sender_role='judge',
+        content=f"[VERDICT: {result.upper()}] {reason}",
+        status='admitted'
+    )
+    db.session.add(msg)
+    db.session.commit()
+    return jsonify({"status": "success", "message": f"Case updated to {result}."})
+
+@app.route('/api/judge/intervene', methods=['POST'])
+@login_required
+def judge_intervene():
+    if current_user.role != 'judge':
+        return jsonify({"error": "Forbidden"}), 403
+    data = request.get_json()
+    case_id = data.get('case_id')
+    content = data.get('content')
+
+    if not case_id or not content:
+        return jsonify({"error": "Missing parameters"}), 400
+
+    c = Case.query.get(case_id)
+    if not c:
+        return jsonify({"error": "Case not found"}), 404
+
+    if c.judge_id != current_user.id:
+        return jsonify({"error": "Forbidden"}), 403
+
+    msg = Submission(
+        case_id=case_id,
+        sender_role='judge',
+        content=f"[INTERVENTION] {content}",
+        status='admitted'
+    )
+    db.session.add(msg)
+    db.session.commit()
+    return jsonify({"status": "success", "message": "Intervention posted."})
+
+@app.route('/api/judge/post_article', methods=['POST'])
+@login_required
+def judge_post_article():
+    if current_user.role != 'judge':
+        return jsonify({"error": "Forbidden"}), 403
+    data = request.get_json()
+    title = data.get('title')
+    content = data.get('content')
+    image_url = data.get('image_url')
+
+    if not title or not content:
+        return jsonify({"error": "Missing title or content"}), 400
+
+    art = Article(
+        title=title,
+        content=content,
+        image_url=image_url,
+        judge_id=current_user.id
+    )
+    db.session.add(art)
+    db.session.commit()
+    return jsonify({"status": "success", "message": "Article published."})
+
+@app.route('/api/judge/post_notice', methods=['POST'])
+@login_required
+def judge_post_notice():
+    if current_user.role != 'judge':
+        return jsonify({"error": "Forbidden"}), 403
+    data = request.get_json()
+    title = data.get('title')
+    content = data.get('content')
+    importance = data.get('importance', 'standard')
+
+    if not title or not content:
+        return jsonify({"error": "Missing title or content"}), 400
+
+    notc = Notice(
+        title=title,
+        content=content,
+        importance=importance,
+        judge_id=current_user.id
+    )
+    db.session.add(notc)
+    db.session.commit()
+    return jsonify({"status": "success", "message": "Notice issued."})
+
+@app.route('/api/public/content', methods=['GET'])
+def get_public_content():
+    articles = Article.query.all()
+    notices = Notice.query.all()
+    
+    arts = []
+    for a in articles:
+        j = User.query.get(a.judge_id)
+        arts.append({
+            "id": a.id, "title": a.title, "content": a.content,
+            "image_url": a.image_url, "judge": j.username if j else "Anonymous"
+        })
+        
+    nots = []
+    for n in notices:
+        j = User.query.get(n.judge_id)
+        nots.append({
+            "id": n.id, "title": n.title, "content": n.content,
+            "importance": n.importance, "judge": j.username if j else "Anonymous"
+        })
+
+    return jsonify({"articles": arts, "notices": nots})
 
 if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()
+        if not User.query.filter_by(username='admin').first():
+            print("Seeding Admin user (admin/admin123)...")
+            admin = User(username='admin', role='admin', approved=True)
+            admin.set_password('admin123')
+            db.session.add(admin)
+            db.session.commit()
     app.run(debug=True, port=5000)
