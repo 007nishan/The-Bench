@@ -24,16 +24,16 @@
             </button>
             <i data-lucide="scale" class="w-6 h-6 text-amber-500"></i>
             <span class="font-bold text-lg tracking-tight hidden sm:block">The Bench</span>
-            <span class="text-xs bg-slate-800 px-2 py-0.5 rounded border border-slate-700 text-slate-400 uppercase">
-                {{ role }}
+            <span class="text-xs bg-slate-800 px-2 py-0.5 rounded border border-slate-700 text-slate-400">
+                <span class="font-bold text-amber-400">@{{ user.username }}</span> &nbsp;(&nbsp;<span class="uppercase">{{ role }}</span>&nbsp;)
             </span>
         </div>
         <div class="flex items-center gap-4">
             <button onclick="toggleSidebar('rightSidebar')" class="md:hidden text-slate-400 hover:text-slate-200">
                 <i data-lucide="clock" class="w-5 h-5"></i>
             </button>
-            <button onclick="window.location.href='/'" class="text-xs text-slate-400 hover:text-slate-200 flex items-center gap-1">
-                <i data-lucide="log-out" class="w-3.5 h-3.5"></i> <span class="hidden sm:inline">Exit Chamber</span>
+            <button onclick="window.location.href='/logout'" class="text-xs text-slate-400 hover:text-slate-200 flex items-center gap-1">
+                <i data-lucide="log-out" class="w-3.5 h-3.5"></i> <span class="hidden sm:inline">Logout</span>
             </button>
         </div>
     </header>
@@ -78,59 +78,49 @@
         <main class="flex-1 flex flex-col p-6 overflow-y-auto custom-scrollbar border-r border-slate-800">
             
             {% if role == 'admin' %}
-            <!-- ADMIN VIEW: HEADQUARTERS -->
+            <!-- ADMIN VIEW: REGISTRAR'S OFFICE -->
             <div class="flex flex-col space-y-4">
                 <div class="flex items-center justify-between">
-                    <h2 class="text-xl font-bold">Admin Panel</h2>
-                    <span class="text-xs bg-slate-800 px-3 py-1 rounded-full border border-slate-700 text-blue-400">
-                        System Overview
-                    </span>
+                    <div>
+                        <h2 class="text-xl font-bold">Registrar's Office</h2>
+                        <p class="text-xs text-slate-500 mt-0.5">Admin function: Authenticate registrations only. Case management is exclusive to Judges.</p>
+                    </div>
+                    <span class="text-xs bg-blue-900/40 px-3 py-1 rounded-full border border-blue-800/50 text-blue-400">Admin</span>
                 </div>
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 pr-1">
-                    <div class="bg-slate-800/50 p-5 rounded-xl border border-slate-700/50 space-y-4 backdrop-blur-sm self-start">
-                        <h3 class="font-semibold text-sm text-blue-400 flex items-center gap-2">
-                            <i data-lucide="plus-circle" class="w-4 h-4"></i> Create Case
-                        </h3>
-                        <div>
-                            <label class="block text-xs text-slate-400 mb-1">Title</label>
-                            <input type="text" id="newCaseTitle" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-slate-100">
-                        </div>
-                        <div>
-                            <label class="block text-xs text-slate-400 mb-1">Description</label>
-                            <textarea id="newCaseDesc" class="w-full h-24 bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-slate-100 resize-none"></textarea>
-                        </div>
-                        <button onclick="createCase()" class="w-full bg-blue-600 hover:bg-blue-500 text-white p-2 rounded-lg font-semibold text-sm transition-all">
-                            Initialize Case
-                        </button>
-                    </div>
-                    <div class="bg-slate-800/50 p-5 rounded-xl border border-slate-700/50 space-y-4 backdrop-blur-sm">
-                        <h3 class="font-semibold text-sm text-amber-500 flex items-center gap-2">
-                            <i data-lucide="users" class="w-4 h-4"></i> Allocate & Assign
-                        </h3>
-                        <div id="adminCaseList" class="space-y-3">
-                            <div class="text-center text-slate-500 py-5 italic text-xs">Loading cases...</div>
-                        </div>
-                    </div>
-                    <div class="bg-slate-800/50 p-5 rounded-xl border border-slate-700/50 space-y-4 backdrop-blur-sm self-start">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 pr-1">
+                    <!-- Pending Approvals (PRIMARY) -->
+                    <div class="bg-slate-800/50 p-5 rounded-xl border border-green-900/40 space-y-4 backdrop-blur-sm">
                         <h3 class="font-semibold text-sm text-green-400 flex items-center gap-2">
-                            <i data-lucide="shield-alert" class="w-4 h-4"></i> Pending Approvals
+                            <i data-lucide="shield-check" class="w-4 h-4"></i> Pending Registration Approvals
                         </h3>
                         <div id="pendingUsersList" class="space-y-2">
-                            <div class="text-center text-slate-500 py-5 italic text-xs">No pending approvals.</div>
+                            <div class="text-center text-slate-500 py-5 italic text-xs">Loading...</div>
+                        </div>
+                    </div>
+                    <!-- All Cases Overview (READ-ONLY) -->
+                    <div class="bg-slate-800/50 p-5 rounded-xl border border-slate-700/50 space-y-4 backdrop-blur-sm">
+                        <h3 class="font-semibold text-sm text-amber-500 flex items-center gap-2">
+                            <i data-lucide="layout-list" class="w-4 h-4"></i> Court Case Overview
+                            <span class="text-slate-600 text-[10px] font-normal ml-1">(read-only — managed by Judges)</span>
+                        </h3>
+                        <div id="adminCaseList" class="space-y-3">
+                            <div class="text-center text-slate-500 py-5 italic text-xs">Loading...</div>
                         </div>
                     </div>
                 </div>
             </div>
+
             {% elif role == 'judge' %}
             <!-- JUDGE VIEW: THE BENCH -->
             <div class="flex flex-col space-y-4">
                 <!-- Tabs Nav -->
                 <div class="flex gap-2 border-b border-slate-800 pb-1.5 flex-shrink-0 flex-wrap">
                     <button onclick="switchJudgeTab('review')" id="tabReview" class="px-3 py-1 text-xs font-bold rounded bg-slate-800 border border-slate-700 text-amber-500">Review Board</button>
-                    <button onclick="switchJudgeTab('initiate')" id="tabInitiate" class="px-3 py-1 text-xs font-bold rounded bg-slate-900 border border-slate-800 text-slate-400">⚖ Initiate Suo Motu</button>
+                    <button onclick="switchJudgeTab('initiate')" id="tabInitiate" class="px-3 py-1 text-xs font-bold rounded bg-slate-900 border border-slate-800 text-slate-400">&#9878; Initiate Suo Motu</button>
                     <button onclick="switchJudgeTab('studio')" id="tabStudio" class="px-3 py-1 text-xs font-bold rounded bg-slate-900 border border-slate-800 text-slate-400">Creator Studio</button>
                     <button onclick="switchJudgeTab('profile')" id="tabProfile" class="px-3 py-1 text-xs font-bold rounded bg-slate-900 border border-slate-800 text-slate-400">Profile</button>
                 </div>
+
 
                 <div id="panelReview" class="flex flex-col space-y-4">
                     <div class="flex items-center justify-between">
@@ -234,28 +224,94 @@
 
             </div>
             {% else %}
-            <!-- PARTY VIEW: WAR ROOM -->
-            <div class="flex-1 flex flex-col space-y-4 overflow-hidden">
-                <h2 class="text-xl font-bold">War Room</h2>
-                <div id="chatArea" class="flex-1 bg-slate-800/30 rounded-lg p-4 custom-scrollbar overflow-y-auto space-y-4 border border-slate-800 flex flex-col">
-                    <div class="max-w-[80%] rounded-lg p-3 bg-slate-800 text-slate-200">
-                        <span class="text-xs font-bold opacity-70">Strategist AI</span>
-                        <p class="text-sm mt-1">Welcome, {{ role }}. What strategy do we pursue today?</p>
+            <!-- USER PORTAL: MY CASE REPOSITORY -->
+            <div class="flex flex-col space-y-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-xl font-bold">My Court Portal</h2>
+                        <p class="text-xs text-slate-500 mt-0.5">All your cases, documents, arguments, and court records in one place.</p>
+                    </div>
+                    <button onclick="fileCaseModal()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2 rounded-lg flex items-center gap-1">
+                        <i data-lucide="plus" class="w-3.5 h-3.5"></i> File New Case
+                    </button>
+                </div>
+
+                <!-- AI Guidance Banner -->
+                <div id="aiGuidanceBanner" class="bg-blue-950/20 border border-blue-900/40 rounded-xl p-3 flex items-start gap-3 shadow-sm">
+                    <div class="bg-blue-900/50 p-1.5 rounded-lg text-blue-400 mt-0.5">
+                        <i data-lucide="compass" class="w-4 h-4"></i>
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex justify-between items-center mb-0.5">
+                            <span class="text-[10px] font-bold text-blue-400 tracking-wider uppercase">Guided Next Step</span>
+                            <span id="guidanceState" class="text-[9px] text-slate-500">System Ready</span>
+                        </div>
+                        <h4 id="guidanceTitle" class="font-bold text-xs text-slate-200">Select a Case from the left pane or grid to initialize guides.</h4>
+                        <p id="guidanceDesc" class="text-[10px] text-slate-400 mt-1 leading-relaxed">The Legal AI Counsel will assess your docket status to recommend and auto-draft professional court templates automatically at every workflow step.</p>
+                        
+                        <div id="guidanceActions" class="gap-1.5 mt-2 hidden flex">
+                            <button id="guidanceDraftBtn" onclick="applyGuidanceAutoDraft()" class="text-[9px] px-2 py-1 bg-amber-600 hover:bg-amber-500 text-slate-900 font-bold rounded flex items-center gap-1 shadow-sm"><i data-lucide="feather" class="w-2.5 h-2.5"></i> Auto-Draft Template</button>
+                            <button id="guidanceTabBtn" onclick="switchUserTab('argument')" class="text-[9px] px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-slate-300 flex items-center gap-0.5"><i data-lucide="arrow-right" class="w-2.5 h-2.5"></i> Open Tab</button>
+                        </div>
                     </div>
                 </div>
-                <div id="warningBox" class="hidden bg-red-900/20 border border-red-500/50 rounded-lg p-3 text-red-300 text-xs"></div>
-                <div class="h-40 bg-slate-800/80 rounded-lg border border-slate-700 p-3 flex flex-col gap-2 relative">
-                    <textarea id="inputText" class="flex-1 bg-transparent resize-none outline-none text-slate-200 text-sm font-mono"></textarea>
-                    <div class="flex justify-between items-center bg-slate-800/50 pt-2 border-t border-slate-700/50">
-                        <div class="flex items-center gap-1 text-xs text-slate-400">
-                            <i data-lucide="paperclip" class="w-3.5 h-3.5"></i>
-                            <select id="evidenceSelect" class="bg-slate-700 border border-slate-600 rounded px-1.5 py-0.5 text-slate-200">
-                                <option value="">Attach Citation...</option>
-                            </select>
+
+                <!-- User Tabs -->
+                <div class="flex gap-2 border-b border-slate-800 pb-1.5 flex-wrap">
+                    <button onclick="switchUserTab('cases')" id="uTabCases" class="px-3 py-1 text-xs font-bold rounded bg-slate-800 border border-slate-700 text-blue-400">My Cases</button>
+                    <button onclick="switchUserTab('documents')" id="uTabDocuments" class="px-3 py-1 text-xs font-bold rounded bg-slate-900 border border-slate-800 text-slate-400">Documents & Proofs</button>
+                    <button onclick="switchUserTab('summons')" id="uTabSummons" class="px-3 py-1 text-xs font-bold rounded bg-slate-900 border border-slate-800 text-slate-400">Summons Received</button>
+                    <button onclick="switchUserTab('argument')" id="uTabArgument" class="px-3 py-1 text-xs font-bold rounded bg-slate-900 border border-slate-800 text-slate-400">File Argument</button>
+                </div>
+
+                <!-- MY CASES TAB -->
+                <div id="uPanelCases" class="space-y-3">
+                    <div id="userCaseList" class="space-y-3">
+                        <div class="text-center text-slate-500 py-8 italic text-sm">Loading your cases...</div>
+                    </div>
+                </div>
+
+                <!-- DOCUMENTS & PROOFS TAB -->
+                <div id="uPanelDocuments" class="hidden space-y-3">
+                    <p class="text-xs text-slate-500">All documents, evidence, and proofs organized by case and date.</p>
+                    <div id="userDocsList" class="space-y-2">
+                        <div class="text-slate-500 italic text-xs text-center py-6">Select a case first to view documents.</div>
+                    </div>
+                </div>
+
+                <!-- SUMMONS TAB -->
+                <div id="uPanelSummons" class="hidden space-y-3">
+                    <div id="userSummonsList" class="space-y-2">
+                        <div class="text-slate-500 italic text-xs text-center py-6">Loading summons...</div>
+                    </div>
+                </div>
+
+                <!-- FILE ARGUMENT TAB -->
+                <div id="uPanelArgument" class="hidden space-y-4">
+                    <p class="text-xs text-slate-500">Submit an argument or motion for an active case. The Judge will review your submission.</p>
+                    <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50 space-y-3 max-w-lg">
+                        <div id="warningBox" class="hidden bg-red-900/20 border border-red-500/50 rounded-lg p-3 text-red-300 text-xs"></div>
+                        <textarea id="inputText" class="w-full h-32 bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 resize-none outline-none focus:border-blue-500" placeholder="Enter your argument or motion here..."></textarea>
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs text-slate-500">Case: <span id="selectedCaseName" class="text-slate-300">None selected</span></span>
+                            <button onclick="fileMotion()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-1">
+                                <i data-lucide="send" class="w-3.5 h-3.5"></i> File Motion
+                            </button>
                         </div>
-                        <div class="flex gap-2">
-                            <button onclick="handleSend()" class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 rounded text-xs">Ask AI</button>
-                            <button onclick="fileMotion()" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded text-xs">File Motion</button>
+                    </div>
+
+                    <!-- AI Suggestion Box -->
+                    <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50 space-y-2 max-w-lg">
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                            <h4 class="font-bold text-xs text-slate-300 flex items-center gap-1">
+                                <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-500 animate-pulse"></i> AI Legal Counsel
+                            </h4>
+                            <button id="suggestBtn" onclick="getAISuggestion()" class="text-[10px] bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded text-slate-300 flex items-center gap-1">
+                                <i data-lucide="lightbulb" class="w-3 h-3"></i> Get Advice
+                            </button>
+                        </div>
+                        <div id="suggestionContent" class="text-xs text-slate-400 italic py-1 leading-relaxed min-h-[40px]">
+                            Select a case and click "Get Advice" to fetch strategic advice based on your current argument inputs.
                         </div>
                     </div>
                 </div>
@@ -328,6 +384,94 @@
         </div>
     </div>
 
+    <!-- Modal for filing case -->
+    <div id="fileModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 w-full max-w-sm space-y-3 shadow-2xl">
+            <h3 class="font-bold text-slate-100 flex items-center gap-2">
+                <i data-lucide="gavel" class="text-amber-500"></i> File New Case
+            </h3>
+            <div class="space-y-2">
+                <div>
+                    <label class="block text-xs text-slate-400 mb-0.5">Case Title *</label>
+                    <input type="text" id="fileCaseTitle" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-slate-100">
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-0.5">Description</label>
+                    <textarea id="fileCaseDesc" class="w-full h-20 bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-slate-100 resize-none"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-0.5">Type</label>
+                    <select id="fileCaseType" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-slate-100">
+                        <option value="standard">Standard Case</option>
+                        <option value="pil">Public Interest Litigation (PIL)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 pt-1 border-t border-slate-700">
+                <button onclick="closeFileModal()" class="px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded-lg text-xs font-semibold">Cancel</button>
+                <button onclick="submitUserCase()" class="px-3 py-1 bg-amber-600 hover:bg-amber-500 rounded-lg text-xs font-semibold text-slate-900">Submit</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Receipt / Certification Slip -->
+    <div id="receiptModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-white text-slate-900 rounded-xl p-8 w-full max-w-sm space-y-4 shadow-2xl relative border-4 border-double border-slate-300">
+            <!-- Professional Header -->
+            <div class="text-center border-b pb-3 border-dashed border-slate-200">
+                <div class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Official Judiciary Record</div>
+                <h3 class="font-black text-lg tracking-tight text-slate-800">THE SUPREME BENCH</h3>
+                <p class="text-[8px] text-slate-500">ELECTRONIC CASE FILING SYSTEM &bull; RECEIPT</p>
+            </div>
+
+            <!-- Content -->
+            <div class="space-y-3 py-2 text-left text-xs">
+                <div>
+                    <span class="text-[10px] font-semibold text-slate-400">Case Title</span>
+                    <div id="slipTitle" class="font-bold text-slate-800">General Litigation Title</div>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <span class="text-[10px] font-semibold text-slate-400">Unique Case No.</span>
+                        <div id="receiptNumber" class="font-mono font-black text-amber-600">CN-0000</div>
+                    </div>
+                    <div>
+                        <span class="text-[10px] font-semibold text-slate-400">Type</span>
+                        <div id="slipType" class="font-semibold text-slate-700 uppercase">CIVIL</div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <span class="text-[10px] font-semibold text-slate-400">Filer / Accuser</span>
+                        <div id="slipFiler" class="font-semibold text-slate-700">@user1</div>
+                    </div>
+                    <div>
+                        <span class="text-[10px] font-semibold text-slate-400">Status</span>
+                        <div id="slipStatus" class="font-semibold text-slate-700 uppercase">PENDING</div>
+                    </div>
+                </div>
+                <div>
+                    <span class="text-[10px] font-semibold text-slate-400">Timestamp</span>
+                    <div id="slipDate" class="text-slate-600 text-[10px]">2026-03-23 18:40</div>
+                </div>
+            </div>
+
+            <!-- Seal visual -->
+            <div class="absolute bottom-16 right-6 opacity-10">
+                <i data-lucide="scale" class="w-16 h-16 text-slate-900"></i>
+            </div>
+
+            <div class="text-[8px] text-center text-slate-400 pt-1 border-t border-dashed border-slate-200">
+                This document is a certified digital filing summary receipt. 
+            </div>
+
+            <div class="flex justify-center gap-2 pt-2 border-t border-slate-100 mt-2">
+                <button onclick="window.print()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 border rounded-lg text-xs font-semibold text-slate-700 flex items-center gap-1"><i data-lucide="printer" class="w-3.5 h-3.5"></i> Print</button>
+                <button onclick="closeReceiptModal()" class="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 rounded-lg text-xs font-semibold text-white shadow-md">Close</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Floating Action Button -->
     <button onclick="openFeedbackModal()" class="fixed bottom-6 right-6 lg:right-10 bg-red-600 hover:bg-red-500 text-white p-3 rounded-full shadow-lg z-50 flex items-center justify-center transition-transform hover:scale-105" title="Report Bug / Logic Fallacy">
         <i data-lucide="alert-triangle" class="w-5 h-5"></i>
@@ -365,8 +509,12 @@
             if (role === 'admin') loadAdminCases();
         }, 5000);
 
-        // Load cases allocated to the current user (or all if admin)
+        // Load cases allocated to the current user (or all if admin/user role)
         async function loadCases() {
+            if (role === 'admin') { loadAdminCases(); return; }
+            if (role === 'user') { loadUserCases(); return; }
+
+            // Judge: populate caseSelect sidebar
             try {
                 const res = await fetch('/api/cases');
                 const cases = await res.json();
@@ -390,8 +538,6 @@
                         select.value = cases[0].id;
                     }
                     switchCase();
-                } else if (role === 'admin') {
-                    loadAdminCases();
                 }
             } catch (e) { console.error(e); }
         }
@@ -416,6 +562,10 @@
             try {
                 const res = await fetch(`/api/court_log?case_id=${activeCaseId}`);
                 const log = await res.json();
+
+                // Trigger Guidance updates for users
+                if (typeof fetchGuidance === 'function') fetchGuidance(activeCaseId);
+
                 const container = document.getElementById('courtLog');
                 if(!container) return;
                 container.innerHTML = '';
@@ -474,10 +624,31 @@
                         </div>
                         <p class="text-sm text-slate-200 mt-2 pl-2 font-serif bg-slate-900/40 p-2 rounded">"${sub.argument}"</p>
                         
-                        ${role === 'judge' && sub.status === 'pending' ? `
-                        <div class="mt-4 flex gap-2 justify-end">
-                            <button onclick="verifySubmission('${sub.id}', 'admitted')" class="px-2 py-1 bg-green-600 rounded text-xs text-white">Admit</button>
-                            <button onclick="verifySubmission('${sub.id}', 'rejected')" class="px-2 py-1 bg-red-600 rounded text-xs text-white">Reject</button>
+                        ${sub.grade ? `
+                        <div class="mt-1 text-[10px] text-amber-400 font-bold flex items-center gap-1 pl-2">
+                            <i data-lucide="star" class="w-3 h-3 fill-amber-400"></i> Judge Score: ${sub.grade}/10
+                        </div>` : ''}
+                        ${sub.feedback_note ? `
+                        <div class="mt-1 text-[10px] text-slate-400 italic bg-slate-900/30 p-1.5 rounded border border-slate-800/80 pl-2">
+                            <b>Note:</b> ${sub.feedback_note}
+                        </div>` : ''}
+
+                        ${role === 'judge' ? `
+                        <div class="mt-3 border-t border-slate-700/50 pt-2 space-y-2">
+                            <div class="flex items-center gap-2">
+                                <label class="text-[10px] text-slate-400">Rate Strategy (1-10):</label>
+                                <select id="grade-${sub.id}" class="bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-[10px] text-slate-200">
+                                    ${[1,2,3,4,5,6,7,8,9,10].map(v => `<option value="${v}" ${sub.grade == v ? 'selected' : ''}>${v}</option>`).join('')}
+                                </select>
+                            </div>
+                            <textarea id="feedback-${sub.id}" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-[10px] text-slate-200 resize-none h-12" placeholder="Leave grading strategy feedback or correction reasons...">${sub.feedback_note || ''}</textarea>
+                            <div class="flex gap-2 justify-end">
+                                <button onclick="saveGrade('${sub.id}')" class="px-2 bg-slate-700 hover:bg-slate-600 rounded text-[10px] text-slate-200 py-1 flex items-center gap-1"><i data-lucide="check" class="w-3 h-3"></i> Save</button>
+                                ${sub.status === 'pending' || sub.status === 'inquiry' ? `
+                                <button onclick="verifySubmission('${sub.id}', 'admitted')" class="px-2 py-1 bg-green-600 hover:bg-green-500 rounded text-xs text-white">Admit</button>
+                                <button onclick="verifySubmission('${sub.id}', 'rejected')" class="px-2 py-1 bg-red-600 hover:bg-red-500 rounded text-xs text-white">Reject</button>
+                                ` : ''}
+                            </div>
                         </div>
                         ` : ''}
                     `;
@@ -868,8 +1039,304 @@
             if (res.ok) loadSubmissions();
         }
 
-        // Dummy handlers reserved for party chatbot Strategy if needed
-        async function handleSend() { alert("Strategy chat unavailable for offline test framework."); }
+        async function saveGrade(id) {
+            const grade = document.getElementById(`grade-${id}`).value;
+            const feedback = document.getElementById(`feedback-${id}`).value;
+            
+            const res = await fetch('/api/judge/grade_submission', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ submission_id: id, grade: grade, feedback_note: feedback })
+            });
+            if (res.ok) {
+                alert("Grade & Feedback saved.");
+                loadSubmissions();
+            } else {
+                alert("Failed to save grade.");
+            }
+        }
+
+        /* --- AI GUIDANCE BANNER LOGIC --- */
+        let currentGuidanceTemplate = "";
+
+        async function fetchGuidance(caseId) {
+            const banner = document.getElementById('aiGuidanceBanner');
+            const title  = document.getElementById('guidanceTitle');
+            const desc   = document.getElementById('guidanceDesc');
+            const state  = document.getElementById('guidanceState');
+            const actions = document.getElementById('guidanceActions');
+
+            if (!banner || role !== 'user' && role !== 'accuser' && role !== 'accused') return;
+
+            try {
+                const res = await fetch(`/api/chat/guidance?case_id=${caseId}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (title) title.innerText = data.step || "Action Required";
+                    if (desc) desc.innerText = data.template ? "Strategic pre-fill template available. Click below to draft." : "Consulting active logs.";
+                    if (state) state.innerText = `Docket: ${(data.status || 'Active').toUpperCase()}`;
+                    
+                    currentGuidanceTemplate = data.template || "";
+                    if (actions) {
+                        if (data.template) actions.classList.remove('hidden');
+                        else actions.classList.add('hidden');
+                    }
+                }
+            } catch (e) {
+                console.error("Guidance fetch error:", e);
+            }
+        }
+
+        function applyGuidanceAutoDraft() {
+            const textInput = document.getElementById('inputText');
+            if (textInput && currentGuidanceTemplate) {
+                textInput.value = currentGuidanceTemplate;
+                alert("Professional Judicial template pre-filled in your Argument Tab.");
+                switchUserTab('argument');
+            } else {
+                alert("No template draft loaded.");
+            }
+        }
+
+        // --- USER PORTAL LOGIC ---
+        function switchUserTab(tab) {
+            const tabs = ['Cases', 'Documents', 'Summons', 'Argument'];
+            tabs.forEach(t => {
+                const panel = document.getElementById(`uPanel${t}`);
+                const btn   = document.getElementById(`uTab${t}`);
+                if (!panel || !btn) return;
+                if (t.toLowerCase() === tab) {
+                    panel.classList.remove('hidden');
+                    btn.className = "px-3 py-1 text-xs font-bold rounded bg-slate-800 border border-slate-700 text-blue-400";
+                    if (tab === 'summons') loadUserSummons();
+                } else {
+                    panel.classList.add('hidden');
+                    btn.className = "px-3 py-1 text-xs font-bold rounded bg-slate-900 border border-slate-800 text-slate-400";
+                }
+            });
+        }
+
+        async function loadUserCases() {
+            try {
+                const res = await fetch('/api/cases');
+                const cases = await res.json();
+                const container = document.getElementById('userCaseList');
+                if (!container) return;
+
+                if (!cases || cases.length === 0) {
+                    container.innerHTML = '<div class="text-center text-slate-500 py-10 italic text-sm">You have no active cases. Click "File New Case" to begin.</div>';
+                    return;
+                }
+                container.innerHTML = '';
+                // Global lookup for Slip views
+                window.__allCases = cases;
+
+                cases.forEach(c => {
+                    const stk = (c.stakeholders || []).find(s => s.user_role_in_case);
+                    const roleLabel = c.your_role || (c.stakeholders || []).map(s => s.role).join(', ') || 'Party';
+                    const summonCount = (c.summons || []).length;
+                    const card = document.createElement('div');
+                    card.className = "bg-slate-800/50 p-4 rounded-xl border border-slate-700/50 space-y-3 cursor-pointer hover:border-blue-700/50 transition-colors";
+                    card.onclick = () => {
+                        activeCaseId = c.id;
+                        const nameEl = document.getElementById('selectedCaseName');
+                        if (nameEl) nameEl.textContent = c.title;
+                        loadTimeline();
+                    };
+
+                    const statusColor = c.status === 'active' ? 'text-green-400 bg-green-900/30 border-green-800/50' :
+                                        c.status === 'pending_admission' ? 'text-amber-400 bg-amber-900/30 border-amber-800/50' :
+                                        'text-slate-400 bg-slate-800 border-slate-700';
+
+                    card.innerHTML = `
+                        <div class="flex justify-between items-start gap-3">
+                            <div class="flex-1">
+                                <div class="font-bold text-slate-200 text-sm">${c.title}</div>
+                                <div class="text-[10px] text-slate-500 mt-0.5">Case Ref: CN-${String(c.id).padStart(4,'0')} &bull; Type: ${(c.case_type||'civil').toUpperCase()}</div>
+                            </div>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${statusColor} flex-shrink-0">${c.status.replace('_', ' ').toUpperCase()}</span>
+                        </div>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-[10px]">
+                            <div class="bg-slate-900/60 rounded-lg p-2 border border-slate-700/40">
+                                <div class="text-slate-500 font-semibold mb-0.5">Your Role</div>
+                                <div class="text-blue-300 font-bold">${roleLabel}</div>
+                            </div>
+                            <div class="bg-slate-900/60 rounded-lg p-2 border border-slate-700/40">
+                                <div class="text-slate-500 font-semibold mb-0.5">Presiding Judge</div>
+                                <div class="text-amber-400 font-bold">${c.judge || 'Unassigned'}</div>
+                            </div>
+                            <div class="bg-slate-900/60 rounded-lg p-2 border border-slate-700/40">
+                                <div class="text-slate-500 font-semibold mb-0.5">Summons Issued</div>
+                                <div class="text-red-400 font-bold">${summonCount}</div>
+                            </div>
+                            <div class="bg-slate-900/60 rounded-lg p-2 border border-slate-700/40">
+                                <div class="text-slate-500 font-semibold mb-0.5">Parties</div>
+                                <div class="text-slate-300 font-bold">${(c.stakeholders||[]).length + 2}</div>
+                            </div>
+                        </div>
+                        ${(c.summons||[]).length > 0 ? `
+                        <div class="bg-red-950/20 border border-red-900/40 rounded-lg p-2">
+                            <p class="text-[10px] font-bold text-red-400 mb-1">Active Summons</p>
+                            ${c.summons.map(s => `<div class="text-[10px] text-slate-400">&bull; ${s.name} (${s.role}) &bull; ${s.fulfilled ? 'Fulfilled' : '<span class="text-red-400">Pending</span>'}</div>`).join('')}
+                        </div>` : ''}
+                        <div class="flex gap-2 pt-1 border-t border-slate-800/80 mt-1">
+                            <button onclick="event.stopPropagation(); activeCaseId=${c.id}; switchUserTab('argument');" class="text-[10px] px-3 py-1 bg-blue-700/30 hover:bg-blue-700/50 border border-blue-700/50 rounded text-blue-300 font-bold">File Motion</button>
+                            <button onclick="event.stopPropagation(); activeCaseId=${c.id}; loadTimeline();" class="text-[10px] px-3 py-1 bg-slate-700/40 hover:bg-slate-700/70 border border-slate-600/50 rounded text-slate-300">Timeline</button>
+                            <button onclick="event.stopPropagation(); viewCaseSlip(${c.id})" class="text-[10px] px-3 py-1 bg-amber-600/20 hover:bg-amber-600/40 border border-amber-600/50 rounded text-amber-300 flex items-center gap-1"><i data-lucide="file-text" class="w-3 h-3"></i> View Slip</button>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+
+                // Update Left Sidebar select for user cases
+                const select = document.getElementById('caseSelect');
+                if (select) {
+                    const prev = select.value;
+                    select.innerHTML = '<option value="">Select Case...</option>';
+                    cases.forEach(c => {
+                        const opt = document.createElement('option');
+                        opt.value = c.id;
+                        opt.innerText = `${c.title} (${c.status.replace('_',' ').toUpperCase()})`;
+                        select.appendChild(opt);
+                    });
+                    if (prev) select.value = prev;
+                }
+            } catch(e) { console.error('loadUserCases error:', e); }
+        }
+
+        async function loadUserSummons() {
+            const container = document.getElementById('userSummonsList');
+            if (!container) return;
+            try {
+                const res = await fetch('/api/cases');
+                const cases = await res.json();
+                const allSummons = [];
+                (cases || []).forEach(c => {
+                    (c.summons || []).forEach(s => allSummons.push({ ...s, case_title: c.title, case_id: c.id }));
+                });
+                if (allSummons.length === 0) {
+                    container.innerHTML = '<div class="text-slate-500 italic text-xs text-center py-6">No summons issued against you or your cases.</div>';
+                    return;
+                }
+                container.innerHTML = '';
+                allSummons.forEach(s => {
+                    const d = document.createElement('div');
+                    d.className = "bg-red-950/20 border border-red-900/40 rounded-xl p-3 space-y-1";
+                    d.innerHTML = `
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-bold text-red-400">Summon — ${s.name}</span>
+                            <span class="text-[10px] ${s.fulfilled ? 'text-green-400' : 'text-red-400'} font-bold">${s.fulfilled ? 'Fulfilled' : 'Pending Appearance'}</span>
+                        </div>
+                        <div class="text-[10px] text-slate-500">Case: <span class="text-slate-300">${s.case_title}</span> &bull; Purpose: ${s.role}</div>
+                    `;
+                    container.appendChild(d);
+                });
+            } catch(e) { console.error(e); }
+        }
+
+        function viewCaseSlip(id) {
+            const c = (window.__allCases || []).find(item => item.id == id);
+            if(!c) return;
+
+            document.getElementById('slipTitle').innerText = c.title;
+            const numEl = document.getElementById('receiptNumber');
+            if (numEl) numEl.innerText = `CN-${String(c.id).padStart(4,'0')}`;
+            const typeEl = document.getElementById('slipType');
+            if (typeEl) typeEl.innerText = (c.case_type || 'Civil').toUpperCase();
+            const filerEl = document.getElementById('slipFiler');
+            if (filerEl) filerEl.innerText = `@${c.accuser || 'Unknown'}`;
+            const statusEl = document.getElementById('slipStatus');
+            if (statusEl) statusEl.innerText = c.status.replace('_',' ').toUpperCase();
+            const dateEl = document.getElementById('slipDate');
+            if (dateEl) dateEl.innerText = new Date().toLocaleString();
+
+            document.getElementById('receiptModal').classList.remove('hidden');
+        }
+
+        function fileCaseModal() {
+            document.getElementById('fileModal').classList.remove('hidden');
+        }
+        function closeFileModal() {
+            document.getElementById('fileModal').classList.add('hidden');
+        }
+        function closeReceiptModal() {
+            document.getElementById('receiptModal').classList.add('hidden');
+        }
+        async function submitUserCase() {
+            const title = document.getElementById('fileCaseTitle').value;
+            const desc = document.getElementById('fileCaseDesc').value;
+            const type = document.getElementById('fileCaseType').value;
+
+            if(!title.trim()) return alert("Title is required.");
+
+            const res = await fetch('/api/public/file_case', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ title, description: desc, case_type: type })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                closeFileModal();
+                const numEl = document.getElementById('receiptNumber');
+                if (numEl) numEl.innerText = data.receipt;
+                document.getElementById('receiptModal').classList.remove('hidden');
+                if (typeof loadUserCases === 'function') loadUserCases();
+            } else {
+                alert("Failed to file case.");
+            }
+        }
+
+        async function getAISuggestion() {
+            const btn = document.getElementById('suggestBtn');
+            const content = document.getElementById('suggestionContent');
+            const input = document.getElementById('inputText').value;
+
+            if (!activeCaseId) {
+                alert("Please select a case from your list first.");
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i data-lucide="refresh-cw" class="w-3 h-3 animate-spin"></i> Loading...';
+            content.innerHTML = 'Consulting AI Counsel for legal strategy...';
+
+            try {
+                const res = await fetch('/api/chat/strategy', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ 
+                        user_role: role, 
+                        query_text: input || "Provide general legal strategy advice for this proceeding step."
+                    })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    let responseHtml = '';
+                    
+                    // Support standard or nested keys
+                    const textAdvice = data.argument || data.response || data.strategy;
+                    if (textAdvice) {
+                        responseHtml = `<div class="bg-slate-900 border border-slate-800 p-2 rounded-lg text-slate-300"><p class="font-bold text-[10px] text-amber-500 mb-1">PROPOSED ARGUMENT / STRATEGY</p>${textAdvice}</div>`;
+                    }
+                    if (data.warning) {
+                        responseHtml += `<div class="bg-red-950/20 border border-red-900/40 p-2 rounded-lg mt-2 text-red-300"><p class="font-bold text-[10px] text-red-400 mb-1">⚠️ CRITICAL WARNING</p>${data.warning}</div>`;
+                    }
+                    
+                    content.innerHTML = responseHtml || `<div class="text-slate-500 italic">AI provided advice response, but format was generic. Response: ${JSON.stringify(data).substring(0,100)}...</div>`;
+                    
+                } else {
+                    content.innerHTML = '<div class="text-red-400 bg-red-950/20 p-2 border border-red-900/50 rounded-lg">Error: Could not fetch advice. Backend model error.</div>';
+                }
+            } catch (e) {
+                content.innerHTML = '<div class="text-red-400 bg-red-950/20 p-2 border border-red-900/50 rounded-lg">Network Error: Could not reach strategy engine.</div>';
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i data-lucide="lightbulb" class="w-3 h-3"></i> Get Advice';
+                if(typeof lucide !== 'undefined') lucide.createIcons();
+            }
+        }
 
         function toggleSidebar(id) {
             const el = document.getElementById(id);

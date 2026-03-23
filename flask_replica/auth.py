@@ -18,9 +18,10 @@ def login_submit():
     user = User.query.filter_by(username=username).first()
     if user and user.check_password(password):
         if not user.approved:
+            msg = "Please ask your admin to approve you before you start using this platform."
             if request.is_json:
-                return jsonify({"error": "Account awaiting Admin Approval"}), 403
-            flash("Account awaiting Admin Approval")
+                return jsonify({"error": msg}), 403
+            flash(msg)
             return redirect(url_for('index'))
             
         login_user(user)
@@ -55,7 +56,7 @@ def register():
         password = request.form.get('password')
         role = request.form.get('role')
 
-    if not username or not password or not role:
+    if not username or not password:
         if request.is_json: return jsonify({"error": "Missing fields"}), 400
         flash("All fields are required.")
         return redirect(url_for('index'))
@@ -63,11 +64,6 @@ def register():
     if User.query.filter_by(username=username).first():
         if request.is_json: return jsonify({"error": "Username taken"}), 400
         flash("Username already exists.")
-        return redirect(url_for('index'))
-
-    if role not in ['judge', 'accuser', 'accused']:
-        if request.is_json: return jsonify({"error": "Invalid role"}), 400
-        flash("Invalid role.")
         return redirect(url_for('index'))
 
     role = 'user' # Force standard user role for public registrations
@@ -80,4 +76,11 @@ def register():
     if request.is_json:
         return jsonify({"status": "success", "message": "Registered! Awaiting Admin Approval."})
     flash("Registered! Awaiting Admin Approval.")
+    return redirect(url_for('index'))
+
+@auth_bp.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    flash("Logged out successfully.")
     return redirect(url_for('index'))

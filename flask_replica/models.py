@@ -43,6 +43,8 @@ class Submission(db.Model):
     content = db.Column(db.Text, nullable=False)
     timestamp = db.Column(db.DateTime, default=db.func.current_timestamp())
     status = db.Column(db.String(20), default='admitted') # admitted, rejected
+    feedback_note = db.Column(db.Text, nullable=True)     # Judge Feedback
+    grade = db.Column(db.Integer, nullable=True)         # Score 1-10
 
 class Inquiry(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -102,3 +104,12 @@ class Comment(db.Model):
     timestamp = db.Column(db.DateTime, default=db.func.current_timestamp())
 
     user = db.relationship('User', backref=db.backref('comments', lazy=True))
+
+class FeedItem(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    category = db.Column(db.String(30), nullable=False) # jobs, corporate, international, labour, tech
+    title = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    image_url = db.Column(db.String(255), nullable=True)
+    source_link = db.Column(db.String(255), nullable=True)
+    timestamp = db.Column(db.DateTime, default=db.func.current_timestamp())

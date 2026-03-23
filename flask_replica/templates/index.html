@@ -8,14 +8,18 @@
 </head>
 <body class="text-slate-100 flex flex-col h-screen overflow-hidden">
     <!-- Top Nav -->
-    <header class="h-14 border-b border-slate-800 flex items-center justify-between px-6 bg-slate-900/80 backdrop-blur-md z-10">
+    <header class="h-14 border-b border-slate-800 flex items-center justify-between px-6 bg-[#212121]/95 backdrop-blur-md z-10">
         <h1 class="text-xl font-bold flex items-center gap-2 cursor-pointer" onclick="window.location.href='/'">
             <i data-lucide="scale" class="text-blue-400 w-5 h-5"></i>
             <span>The Bench</span>
         </h1>
         <div class="flex items-center gap-2">
-            <button onclick="{% if current_user and current_user.is_authenticated %}openFileModal(){% else %}window.location.href='/login'{% endif %}" class="bg-amber-600 hover:bg-amber-500 px-3 tracking-wide py-1.5 rounded-lg text-xs font-bold text-slate-100 flex items-center gap-1 shadow-md mr-1"><i data-lucide="gavel" class="w-3.5 h-3.5"></i> File Case / PIL</button>
+            <button onclick="{% if current_user and current_user.is_authenticated %}openFileModal(){% else %}window.location.href='/login'{% endif %}" class="bg-[#C31F27] hover:bg-[#A3191E] px-3 tracking-wide py-1.5 rounded-lg text-xs font-bold text-slate-100 flex items-center gap-1 shadow-md mr-1"><i data-lucide="gavel" class="w-3.5 h-3.5"></i> File Case / PIL</button>
+            {% if current_user and current_user.is_authenticated %}
+            <button onclick="window.location.href='/dashboard/{{ current_user.role }}'" class="bg-blue-600 hover:bg-blue-500 px-4 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1"><i data-lucide="user" class="w-3.5 h-3.5"></i> @{{ current_user.username }}</button>
+            {% else %}
             <button onclick="window.location.href='/login'" class="bg-blue-600 hover:bg-blue-500 px-4 py-1.5 rounded-lg text-xs font-semibold">Login / Register</button>
+            {% endif %}
         </div>
     </header>
 
@@ -78,7 +82,7 @@
                 div.className = "p-3 bg-slate-800 rounded border border-slate-700 space-y-1";
                 div.innerHTML = `
                     <div class="flex justify-between text-xs text-slate-400 mb-1">
-                        <span class="font-bold uppercase text-amber-500">${item.actor}</span>
+                        <span class="font-bold uppercase text-[#C31F27]">${item.actor}</span>
                         <span>${item.timestamp}</span>
                     </div>
                     <p class="text-sm text-slate-200 font-serif">"${item.details}"</p>
@@ -135,11 +139,11 @@
              container.innerHTML = '';
 
              const noticeDiv = document.createElement('div');
-             noticeDiv.className = "bg-slate-900 border border-slate-700/50 rounded-lg p-2.5 text-xs flex items-center gap-2 overflow-hidden text-amber-500 shadow-md mb-4 max-w-full font-semibold";
+             noticeDiv.className = "bg-slate-900 border border-slate-700/50 rounded-lg p-2.5 text-xs flex items-center gap-2 overflow-hidden text-[#C31F27] shadow-md mb-4 max-w-full font-semibold";
              noticeDiv.innerHTML = `<i data-lucide="megaphone" class="w-4 h-4 flex-shrink-0 text-slate-500"></i> <span>No critical announcements.</span>`;
              if (data.notices && data.notices.length > 0) {
                  const text = data.notices.map(n => `[${n.importance.toUpperCase()}] ${n.title}: ${n.content}`).join(' | ');
-                 noticeDiv.innerHTML = `<i data-lucide="megaphone" class="w-4 h-4 text-amber-400 flex-shrink-0 animate-pulse"></i> <marquee scrollamount="4" class="flex-1 text-amber-500">${text}</marquee>`;
+                 noticeDiv.innerHTML = `<i data-lucide="megaphone" class="w-4 h-4 text-amber-400 flex-shrink-0 animate-pulse"></i> <marquee scrollamount="4" class="flex-1 text-[#C31F27]">${text}</marquee>`;
              }
              container.appendChild(noticeDiv);
 
@@ -173,13 +177,26 @@
                         </div>
                         <div class="text-[9px] text-slate-400 flex justify-between items-center mt-2 border-t border-slate-700/40 pt-1 font-semibold">
                             <span><i data-lucide="user" class="w-2.5 h-2.5 inline text-blue-400"></i> Judge ${a.judge}</span>
-                            <button onclick="event.stopPropagation(); openCommentsModal('article', ${a.id})" class="hover:text-amber-500 text-[10px] flex items-center gap-0.5"><i data-lucide="message-square" class="w-2.5 h-2.5"></i> Interact</button>
+                            <button onclick="event.stopPropagation(); openCommentsModal('article', ${a.id})" class="hover:text-[#C31F27] text-[10px] flex items-center gap-0.5"><i data-lucide="message-square" class="w-2.5 h-2.5"></i> Interact</button>
                         </div>
                     `;
                     grid.appendChild(card);
                 });
              }
              container.appendChild(grid);
+
+              // INSERTED LOGIC
+              // --- LIVE LAW FEEDS ---
+              const feedCats = ["jobs", "corporate", "international", "labour", "tech"];
+              for (const cat of feedCats) {
+                 const catHeader = document.createElement('h3');
+                 catHeader.className = "font-bold text-slate-400 text-xs uppercase tracking-wider mt-6 mb-2 flex items-center gap-1 border-b border-slate-800 pb-1";
+                 let catTitle = cat.charAt(0).toUpperCase() + cat.slice(1);
+                 if (cat === 'jobs') catTitle = "Job Openings";
+                 if (cat === 'labour') catTitle = "Labour & Service";
+                 
+                 catHeader.innerHTML = `<i data-lucide="newspaper" class="w-3.5 h-3.5 text-[#C31F27]"></i> ${catTitle} Updates`;
+                 container.appendChild(catHeader);
              lucide.createIcons();
         }
 
@@ -265,7 +282,7 @@
     <div id="fileModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
         <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 w-96 space-y-3 shadow-2xl">
             <h3 class="font-bold text-slate-100 flex items-center gap-2">
-                <i data-lucide="gavel" class="text-amber-500"></i> File Public Case / PIL
+                <i data-lucide="gavel" class="text-[#C31F27]"></i> File Public Case / PIL
             </h3>
             <div class="space-y-2">
             <!-- Logged-in user filing details appended automatically -->
@@ -299,7 +316,7 @@
             <p class="text-xs text-slate-400">Please note down your unique Case Number for tracking and updates.</p>
             <div class="bg-slate-900 border border-slate-700 rounded-lg p-3">
                 <span class="text-xs text-slate-500 uppercase font-semibold">Unique Case Number</span>
-                <div id="receiptNumber" class="text-xl font-mono font-bold text-amber-500 mt-1">CN-0000</div>
+                <div id="receiptNumber" class="text-xl font-mono font-bold text-[#C31F27] mt-1">CN-0000</div>
             </div>
             <p class="text-[10px] text-slate-400">Status updates will be notified via your provider or local dashboard login.</p>
             <div class="flex justify-center gap-2 pt-2 border-t border-slate-700">
@@ -311,7 +328,7 @@
     <div id="commentsModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
         <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 w-80 space-y-3 shadow-2xl">
             <h3 class="font-bold text-slate-100 text-xs flex items-center gap-1">
-                <i data-lucide="message-circle" class="text-amber-500 w-4 h-4"></i> Interactions Board
+                <i data-lucide="message-circle" class="text-[#C31F27] w-4 h-4"></i> Interactions Board
             </h3>
             <div id="commentsList" class="max-h-48 overflow-y-auto space-y-1 text-[11px] text-slate-300 custom-scrollbar pr-1"></div>
             

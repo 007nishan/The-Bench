@@ -71,7 +71,7 @@ def login_page():
 def dashboard(role):
     if current_user.role != 'admin' and current_user.role != role:
         return redirect(url_for('dashboard', role=current_user.role))
-    if role not in ['accuser', 'accused', 'judge', 'admin']:
+    if role not in ['accuser', 'accused', 'judge', 'admin', 'user']:
         return redirect(url_for('index'))
     return render_template('dashboard.html', role=role, user=current_user)
 
@@ -123,6 +123,63 @@ def file_public_case():
 @app.route('/api/health', methods=['GET'])
 def health():
     return jsonify({"status": "online", "message": "The Bench Flask is Active"})
+
+@app.route('/api/chat/guidance', methods=['GET'])
+@login_required
+def get_guidance():
+    try:
+        case_id = request.args.get('case_id')
+        if not case_id:
+            return jsonify({"error": "Missing case_id"}), 400
+        case_ref = Case.query.get(case_id)
+        if not case_ref:
+            return jsonify({"error": "Case not found"}), 404
+            
+        role = current_user.role
+        if role == 'user':
+            if case_ref.accuser_id == current_user.id:
+                role = 'accuser'
+            elif case_ref.accused_id == current_user.id:
+                role = 'accused'
+
+        # RL weight: Get top rated submissions from DB for implicit prompts
+        from models import Submission
+        top_subs = Submission.query.filter(Submission.grade >= 8).order_by(Submission.grade.desc()).limit(2).all()
+        example_ctx = "\n".join([f"• High Grade Argument Layout: {s.content[:300]}" for s in top_subs])
+
+        prompt = f"""
+        Role: {role.upper()}
+        Case Status: {case_ref.status.upper()}
+        Case Type: {case_ref.case_type.upper()}
+
+        Historical Context (Highly Appreciated layout forms):
+        {example_ctx}
+
+        Task: Provide an educative legal advice sentence for the NEXT STEP, and a highly professional judicial-grade admissible template string.
+        Format EXACTLY with these tags:
+        [STEP] <one line next step suggestion>
+        [TEMPLATE] <Your admissible pre-filled document text>
+        """
+        
+        raw_response = rag_engine.generate_strategic_response(role, prompt)
+        step = "Proceed by reviewing your active dockets."
+        template = ""
+        
+        if "[STEP]" in raw_response and "[TEMPLATE]" in raw_response:
+            parts = raw_response.split("[TEMPLATE]")
+            step = parts[0].replace("[STEP]", "").strip()
+            template = parts[1].strip()
+        else:
+            step = "Formulate your next proceedings."
+            template = raw_response
+
+        return jsonify({
+            "step": step,
+            "template": template,
+            "status": case_ref.status
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/api/chat/strategy', methods=['POST'])
 def strategy_chat():
@@ -189,6 +246,32 @@ def submit_argument():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/api/judge/grade_submission', methods=['POST'])
+@login_required
+def grade_submission():
+    try:
+        if current_user.role != 'judge' and current_user.role != 'admin':
+            return jsonify({"error": "Unauthorized"}), 403
+        data = request.get_json()
+        sub_id = data.get('submission_id')
+        grade = data.get('grade')
+        feedback = data.get('feedback_note')
+        
+        if not sub_id or grade is None:
+            return jsonify({"error": "Missing submission_id or grade"}), 400
+            
+        sub = Submission.query.get(sub_id)
+        if not sub:
+            return jsonify({"error": "Submission not found"}), 404
+            
+        sub.grade = int(grade)
+        if feedback:
+            sub.feedback_note = feedback
+        db.session.commit()
+        return jsonify({"status": "success", "message": "Submission graded."})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/api/judge/pending', methods=['GET'])
 @login_required
 def get_pending():
@@ -217,7 +300,9 @@ def get_pending():
                 "sender": s.sender_role,
                 "argument": s.content,
                 "status": s.status,
-                "timestamp": str(s.timestamp)
+                "timestamp": str(s.timestamp),
+                "grade": s.grade,
+                "feedback_note": s.feedback_note
             })
         return jsonify(res)
     except Exception as e:
@@ -769,6 +854,40 @@ def submit_feedback():
         pass
         
     return jsonify({"status": "success", "message": "Feedback sent directly to developers."})
+
+# --- LIVE LAW FEEDS BACKGROUND DAEMON & API ---
+import threading
+import news_scraper
+
+def start_daemon():
+    def run_scraper():
+        while True:
+            print("[Daemon] Starting Live Law Scraper update cycle...")
+            try:
+                news_scraper.run()
+            except Exception as e:
+                print(f"[Daemon] Scraper Error: {e}")
+            time.sleep(21600) # 6 hours
+            
+    # Run once at startup
+    t = threading.Thread(target=run_scraper, daemon=True)
+    t.start()
+
+start_daemon()
+
+from models import FeedItem
+
+@app.route('/api/feeds', methods=['GET'])
+def get_feeds():
+    category = request.args.get('category', 'jobs')
+    items = FeedItem.query.filter_by(category=category).order_by(FeedItem.timestamp.desc()).limit(6).all()
+    return jsonify([{
+        "title": i.title,
+        "description": i.description,
+        "image_url": i.image_url,
+        "source_link": i.source_link,
+        "timestamp": i.timestamp.strftime("%Y-%m-%d %H:%M") if i.timestamp else ""
+    } for i in items])
 
 if __name__ == '__main__':
 
