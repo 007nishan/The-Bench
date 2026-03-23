@@ -14,7 +14,7 @@
             <span>The Bench</span>
         </h1>
         <div class="flex items-center gap-2">
-            <button onclick="openFileModal()" class="bg-amber-600 hover:bg-amber-500 px-3 tracking-wide py-1.5 rounded-lg text-xs font-bold text-slate-100 flex items-center gap-1 shadow-md mr-1"><i data-lucide="gavel" class="w-3.5 h-3.5"></i> File Case / PIL</button>
+            <button onclick="{% if current_user and current_user.is_authenticated %}openFileModal(){% else %}window.location.href='/login'{% endif %}" class="bg-amber-600 hover:bg-amber-500 px-3 tracking-wide py-1.5 rounded-lg text-xs font-bold text-slate-100 flex items-center gap-1 shadow-md mr-1"><i data-lucide="gavel" class="w-3.5 h-3.5"></i> File Case / PIL</button>
             <button onclick="window.location.href='/login'" class="bg-blue-600 hover:bg-blue-500 px-4 py-1.5 rounded-lg text-xs font-semibold">Login / Register</button>
         </div>
     </header>
@@ -94,18 +94,16 @@
             document.getElementById('fileModal').classList.add('hidden');
         }
         async function submitPublicCase() {
-            const name = document.getElementById('filerName').value;
-            const contact = document.getElementById('filerContact').value;
             const title = document.getElementById('fileCaseTitle').value;
             const desc = document.getElementById('fileCaseDesc').value;
             const type = document.getElementById('fileCaseType').value;
 
-            if(!name.trim() || !title.trim()) return alert("Name and Title are required.");
+            if(!title.trim()) return alert("Title is required.");
 
             const res = await fetch('/api/public/file_case', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ name, contact, title, description: desc, case_type: type })
+                body: JSON.stringify({ title, description: desc, case_type: type })
             });
 
             try {
@@ -244,14 +242,7 @@
                 <i data-lucide="gavel" class="text-amber-500"></i> File Public Case / PIL
             </h3>
             <div class="space-y-2">
-                <div>
-                    <label class="block text-xs text-slate-400 mb-0.5">Your Name *</label>
-                    <input type="text" id="filerName" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-slate-100" placeholder="Identity required">
-                </div>
-                <div>
-                    <label class="block text-xs text-slate-400 mb-0.5">Contact Info (Mail/Phone)</label>
-                    <input type="text" id="filerContact" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-slate-100">
-                </div>
+            <!-- Logged-in user filing details appended automatically -->
                 <div>
                     <label class="block text-xs text-slate-400 mb-0.5">Case Title *</label>
                     <input type="text" id="fileCaseTitle" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-slate-100">

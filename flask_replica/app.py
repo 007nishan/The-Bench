@@ -69,24 +69,22 @@ def get_public_court_log():
     } for s in subs])
 
 @app.route('/api/public/file_case', methods=['POST'])
+@login_required
 def file_public_case():
     data = request.get_json()
     title = data.get('title')
     description = data.get('description')
-    name = data.get('name')
-    contact = data.get('contact')
     case_type = data.get('case_type', 'standard')
 
-    if not title or not name:
-        return jsonify({"error": "Title and Filer Name are required"}), 400
+    if not title:
+        return jsonify({"error": "Title is required"}), 400
 
     new_case = Case(
         title=title,
         description=description,
         status='pending_admission',
         case_type=case_type,
-        public_filer_name=name,
-        public_filer_contact=contact
+        accuser_id=current_user.id  # Bind directly to registered user
     )
     db.session.add(new_case)
     db.session.commit()
